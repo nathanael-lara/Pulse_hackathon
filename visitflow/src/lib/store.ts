@@ -1,9 +1,17 @@
 'use client';
 import { create } from 'zustand';
-import type { RiskLevel, TranscriptLine, Alert, HealthMetric, RehabTask, Message } from './types';
+import type {
+  RiskLevel,
+  TranscriptLine,
+  Alert,
+  HealthMetric,
+  Message,
+  NotificationItem,
+  MedicationReminder,
+} from './types';
 import {
   PATIENT, CURRENT_VISIT, TODAY_REHAB, MOCK_ALERTS,
-  MOCK_MESSAGES, HEALTH_METRICS
+  MOCK_MESSAGES, HEALTH_METRICS, NOTIFICATIONS, MEDICATION_REMINDERS
 } from './mock-data';
 
 interface AppState {
@@ -36,6 +44,12 @@ interface AppState {
   // Messaging
   messages: Message[];
 
+  // Notifications
+  notifications: NotificationItem[];
+
+  // Medication reminders
+  medicationReminders: MedicationReminder[];
+
   // Health metrics
   metrics: HealthMetric[];
 
@@ -60,6 +74,10 @@ interface AppState {
   acknowledgeAlert: (id: string) => void;
   setActiveAlert: (alert: Alert | null) => void;
   addMessage: (msg: Message) => void;
+  addNotification: (note: NotificationItem) => void;
+  markNotificationRead: (id: string) => void;
+  markMedicationTaken: (id: string) => void;
+  markMedicationMissed: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -80,6 +98,8 @@ export const useAppStore = create<AppState>((set) => ({
   alerts: MOCK_ALERTS,
   activeAlert: null,
   messages: MOCK_MESSAGES,
+  notifications: NOTIFICATIONS,
+  medicationReminders: MEDICATION_REMINDERS,
   metrics: HEALTH_METRICS,
   activeView: 'overview',
 
@@ -112,4 +132,21 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   setActiveAlert: (alert) => set({ activeAlert: alert }),
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+  addNotification: (note) => set((s) => ({ notifications: [note, ...s.notifications] })),
+  markNotificationRead: (id) =>
+    set((s) => ({
+      notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    })),
+  markMedicationTaken: (id) =>
+    set((s) => ({
+      medicationReminders: s.medicationReminders.map((r) =>
+        r.id === id ? { ...r, taken: true, missed: false } : r
+      ),
+    })),
+  markMedicationMissed: (id) =>
+    set((s) => ({
+      medicationReminders: s.medicationReminders.map((r) =>
+        r.id === id ? { ...r, taken: false, missed: true } : r
+      ),
+    })),
 }));

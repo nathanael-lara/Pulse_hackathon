@@ -1,0 +1,232 @@
+{
+  "source": "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/VisitFlowiOS/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "SENIOR CARE RECORD",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 124
+        }
+      },
+      {
+        "comment": "",
+        "key": "Jinga",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Life",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 120
+        }
+      },
+      {
+        "comment": "",
+        "key": "Maria Santos",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 177
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week 3 cardiac recovery",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "M",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "Heart Rate",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 209
+        }
+      },
+      {
+        "comment": "",
+        "key": "74",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 216
+        }
+      },
+      {
+        "comment": "",
+        "key": "BEATS / MIN.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 219
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 271
+        }
+      },
+      {
+        "comment": "",
+        "key": "Important reminder",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 333
+        }
+      },
+      {
+        "comment": "",
+        "key": "Maria missed 2 doses today. Please check on her.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 336
+        }
+      },
+      {
+        "comment": "",
+        "key": "Week %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 362
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 392
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min • target HR < %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 414
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 405
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ steps • avg HR %lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 451
+        }
+      },
+      {
+        "comment": "",
+        "key": "Patients can be matched to a provider and a trusted transport option based on ZIP 10024 and the physician's current care plan.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 472
+        }
+      },
+      {
+        "comment": "",
+        "key": "Support need",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 490
+        }
+      },
+      {
+        "comment": "",
+        "key": "ZIP CODE",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 477
+        }
+      },
+      {
+        "comment": "",
+        "key": "ZIP code",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 481
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 503
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min away • %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 536
+        }
+      },
+      {
+        "comment": "",
+        "key": "%.1f mi",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 526
+        }
+      },
+      {
+        "comment": "",
+        "key": "%.1f mi • %@ • %lld seats",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 569
+        }
+      },
+      {
+        "comment": "",
+        "key": "%.1f miles • %lld min away",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 595
+        }
+      },
+      {
+        "comment": "",
+        "key": "ADD +",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 702
+        }
+      },
+      {
+        "comment": "",
+        "key": "HEALTH RECORD",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 784
+        }
+      }
+    ]
+  },
+  "version": 1
+}

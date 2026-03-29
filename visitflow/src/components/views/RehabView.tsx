@@ -1,17 +1,31 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
-  Activity, CheckCircle2, Circle, Wind, Footprints,
-  Zap, Heart, TrendingUp, Play, Pause, ChevronRight,
-  AlertTriangle, Trophy, Flame
+  Activity,
+  CheckCircle2,
+  Wind,
+  Footprints,
+  Zap,
+  Heart,
+  TrendingUp,
+  Play,
+  Pause,
+  AlertTriangle,
+  Trophy,
+  Bell,
+  Watch,
+  History,
+  ChevronLeft,
+  ChevronRight,
+  CalendarRange,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { evaluateCardioStress, generateEncouragement } from '@/lib/ai-service';
 import type { RehabTask, CardioStressResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { WEEK_PROGRESS } from '@/lib/mock-data';
+import { REHAB_12_WEEK_PLAN, REHAB_HISTORY, WEEK_PROGRESS } from '@/lib/mock-data';
 
 const TASK_ICONS = {
   walk: Footprints,
@@ -22,43 +36,34 @@ const TASK_ICONS = {
 
 function StressIndicator({ result }: { result: CardioStressResult }) {
   const colors = {
-    optimal: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-    elevated: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    high: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
-    critical: 'text-red-400 bg-red-400/10 border-red-500/30',
+    optimal: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    elevated: 'border-amber-200 bg-amber-50 text-amber-700',
+    high: 'border-orange-200 bg-orange-50 text-orange-700',
+    critical: 'border-red-200 bg-red-50 text-red-700',
   };
 
-  const labels = { optimal: 'Optimal', elevated: 'Slightly High', high: 'High', critical: 'Stop Now' };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={cn('rounded-2xl p-4 border', colors[result.status])}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Heart className={cn('w-4 h-4', result.status === 'critical' ? 'heartbeat text-red-400' : '')} />
-          <span className="text-sm font-semibold">{labels[result.status]}</span>
+    <div className={cn('rounded-[1.4rem] border p-4', colors[result.status])}>
+      <div className="mb-2 flex items-center justify-between gap-4">
+        <div>
+          <div className="text-sm font-semibold">
+            {result.status === 'critical'
+              ? 'Stop now'
+              : result.status === 'high'
+                ? 'High stress'
+                : result.status === 'elevated'
+                  ? 'Ease back'
+                  : 'Optimal zone'}
+          </div>
+          <div className="mt-1 text-xs opacity-80">Expected around {result.expectedHR} BPM</div>
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold">{result.currentHR}</div>
-          <div className="text-xs opacity-60">BPM</div>
+          <div className="text-xs opacity-80">BPM</div>
         </div>
       </div>
       <p className="text-sm leading-relaxed">{result.recommendation}</p>
-      {result.shouldStop && (
-        <div className="mt-2 flex items-center gap-2 text-xs font-semibold">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          Stop activity immediately
-        </div>
-      )}
-      <div className="mt-2 flex items-center gap-2 text-xs opacity-60">
-        <span>Target: {result.expectedHR} BPM</span>
-        <span>·</span>
-        <span>Current: {result.currentHR} BPM</span>
-      </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -78,99 +83,75 @@ function TaskCard({
 
   const handleComplete = async () => {
     onComplete();
-    const msg = generateEncouragement('win');
-    setEncouragement(msg);
-    setTimeout(() => setEncouragement(''), 5000);
+    setEncouragement(generateEncouragement('win'));
+    setTimeout(() => setEncouragement(''), 4500);
   };
 
   return (
-    <motion.div
-      layout
+    <div
       className={cn(
-        'rounded-2xl p-4 transition-all duration-200',
+        'rounded-[1.5rem] border p-4 transition-all',
         task.completed
-          ? 'glass opacity-60'
+          ? 'border-emerald-200 bg-emerald-50'
           : isActive
-          ? 'glass-card border border-primary/30 glow-blue'
-          : 'glass-card border border-border'
+            ? 'border-primary/20 bg-secondary/60 shadow-[0_8px_20px_rgba(143,113,184,0.1)]'
+            : 'border-border bg-white'
       )}
     >
       <div className="flex items-start gap-3">
-        <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-          task.completed ? 'bg-emerald-400/20' : isActive ? 'bg-primary/20' : 'bg-secondary'
-        )}>
-          {task.completed ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          ) : (
-            <Icon className={cn('w-5 h-5', isActive ? 'text-primary' : 'text-muted-foreground')} />
+        <div
+          className={cn(
+            'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl',
+            task.completed ? 'bg-emerald-100' : isActive ? 'bg-primary/14' : 'bg-secondary'
           )}
+        >
+          {task.completed ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <Icon className="h-5 w-5 text-primary" />}
         </div>
-
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-0.5">
-            <span className={cn('font-medium text-sm', task.completed && 'line-through text-muted-foreground')}>
-              {task.title}
-            </span>
-            <span className="text-xs text-muted-foreground">{task.duration} min</span>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <div className="text-sm font-semibold text-foreground">{task.title}</div>
+            <div className="text-xs text-foreground/55">{task.duration} min</div>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{task.description}</p>
-          {task.targetHR && (
-            <div className="flex items-center gap-1 mt-1.5 text-xs text-primary/70">
-              <Heart className="w-3 h-3" />
-              Target HR: &lt;{task.targetHR} BPM
-            </div>
-          )}
+          <p className="text-sm leading-relaxed text-foreground/72">{task.description}</p>
+          {task.targetHR ? (
+            <div className="mt-2 text-xs text-primary">Heart-rate ceiling: &lt; {task.targetHR} BPM</div>
+          ) : null}
 
-          {!task.completed && (
-            <div className="flex gap-2 mt-3">
+          {!task.completed ? (
+            <div className="mt-3 flex gap-2">
               {!isActive ? (
                 <button
                   onClick={onStart}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium hover:bg-primary/25 transition-colors"
+                  className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground transition-colors hover:bg-secondary/80"
                 >
-                  <Play className="w-3 h-3" />
+                  <Play className="h-3 w-3" />
                   Start
                 </button>
               ) : (
                 <button
                   onClick={handleComplete}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-400/20 text-emerald-400 text-xs font-medium hover:bg-emerald-400/30 transition-colors"
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 transition-colors hover:bg-emerald-100"
                 >
-                  <CheckCircle2 className="w-3 h-3" />
-                  Mark Complete
+                  <CheckCircle2 className="h-3 w-3" />
+                  Mark complete
                 </button>
               )}
             </div>
-          )}
+          ) : null}
 
-          {task.completed && task.completedAt && (
-            <div className="mt-1.5 text-xs text-emerald-400/60">
-              ✓ {task.completedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {encouragement ? (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+              {encouragement}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
-
-      <AnimatePresence>
-        {encouragement && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-3 pt-3 border-t border-emerald-400/20 text-sm text-emerald-400 flex items-center gap-2"
-          >
-            <Zap className="w-4 h-4 flex-shrink-0" />
-            {encouragement}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
 function LiveStressEngine() {
-  const { currentHR, setCurrentHR } = useAppStore();
+  const { currentHR, setCurrentHR, addNotification } = useAppStore();
   const [isActive, setIsActive] = useState(false);
   const [stressResult, setStressResult] = useState<CardioStressResult | null>(null);
 
@@ -179,73 +160,84 @@ function LiveStressEngine() {
     let tick = 0;
     const interval = setInterval(() => {
       tick++;
-      // Simulate HR rising then dropping
-      const simulatedHR = tick < 5
-        ? 72 + tick * 8
-        : tick < 10
-        ? 112 - (tick - 5) * 6
-        : 80 + Math.round(Math.random() * 10);
-
+      const simulatedHR = tick < 5 ? 74 + tick * 8 : tick < 9 ? 112 + (tick - 5) * 4 : 100 - (tick - 9) * 3;
       setCurrentHR(simulatedHR);
       const result = evaluateCardioStress({
         currentHR: simulatedHR,
         restingHR: 65,
-        maxHR: 155, // 220 - age 65
+        maxHR: 155,
         activity: 'light',
         hrVariability: 12,
       });
       setStressResult(result);
+      if (result.status === 'high' || result.status === 'critical') {
+        addNotification({
+          id: `n-rehab-${Date.now()}-${tick}`,
+          title: 'Cardio stress feedback',
+          body: result.recommendation,
+          category: 'rehab',
+          channel: 'in-app',
+          level: result.status === 'critical' ? 'red' : 'orange',
+          timestamp: new Date(),
+          read: false,
+        });
+      }
 
-      if (tick >= 15) {
+      if (tick >= 12) {
         clearInterval(interval);
         setIsActive(false);
       }
-    }, 800);
-  }, [setCurrentHR]);
+    }, 850);
+  }, [addNotification, setCurrentHR]);
 
   const simulateCritical = useCallback(() => {
-    const highHR = 145;
-    setCurrentHR(highHR);
     const result = evaluateCardioStress({
-      currentHR: highHR,
+      currentHR: 146,
       restingHR: 65,
       maxHR: 155,
       activity: 'vigorous',
       hrVariability: 4,
     });
+    setCurrentHR(146);
     setStressResult(result);
   }, [setCurrentHR]);
 
   return (
-    <div className="glass-card rounded-2xl p-5 border border-border">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-primary" />
-          <span className="font-semibold text-sm">Cardio Stress Engine</span>
+    <div className="glass-card rounded-[1.75rem] p-5">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <div className="text-sm font-semibold text-foreground">Cardio stress feedback</div>
+          <div className="mt-1 text-xs text-foreground/58">Real-time pace coaching based on the physician&apos;s current rehab guardrails.</div>
         </div>
-        <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-          {currentHR}
-          <span className="text-xs font-normal text-muted-foreground">BPM</span>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-primary">{currentHR}</div>
+          <div className="text-xs text-foreground/55">BPM</div>
         </div>
       </div>
 
-      {stressResult && <StressIndicator result={stressResult} />}
+      {stressResult ? (
+        <StressIndicator result={stressResult} />
+      ) : (
+        <div className="rounded-[1.4rem] border border-border bg-secondary/35 p-4 text-sm text-foreground/72">
+          Simulate a rehab session to see live guidance such as: “Your HR is high for this pace — slow down.”
+        </div>
+      )}
 
-      <div className="flex gap-2 mt-4">
+      <div className="mt-4 flex gap-2">
         <button
           onClick={simulate}
           disabled={isActive}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl glass border border-border text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground transition-colors hover:bg-secondary/80 disabled:opacity-50"
         >
-          {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          Simulate Walk
+          {isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+          Simulate walk
         </button>
         <button
           onClick={simulateCritical}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors"
+          className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 transition-colors hover:bg-red-100"
         >
-          <AlertTriangle className="w-3.5 h-3.5" />
-          Trigger Alert
+          <AlertTriangle className="h-3 w-3" />
+          Trigger alert
         </button>
       </div>
     </div>
@@ -253,71 +245,79 @@ function LiveStressEngine() {
 }
 
 export function RehabView() {
-  const { todayRehab, completeTask, setActiveTask, activeTaskId, patient } = useAppStore();
+  const { todayRehab, completeTask, setActiveTask, activeTaskId, patient, notifications } = useAppStore();
+  const [selectedWeek, setSelectedWeek] = useState(todayRehab.week);
 
-  const completedCount = todayRehab.tasks.filter((t) => t.completed).length;
+  const completedCount = todayRehab.tasks.filter((task) => task.completed).length;
   const totalCount = todayRehab.tasks.length;
   const pct = Math.round((completedCount / totalCount) * 100);
+  const weekPlan = REHAB_12_WEEK_PLAN.find((plan) => plan.week === selectedWeek) ?? REHAB_12_WEEK_PLAN[0];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-6xl p-4">
+      <div className="mb-7 flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold">Rehab Mode</h1>
-          <p className="text-sm text-muted-foreground">Week {todayRehab.week} · Day {todayRehab.day} · {new Date().toLocaleDateString()}</p>
+          <div className="editorial-kicker mb-2 text-primary">Rehab program</div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Doctor-Aligned Recovery</h1>
+          <p className="mt-1 text-sm text-foreground/72">
+            Interactive 12-week plan, wearable feedback, and clinician-facing backlog grounded in the current cardiac guidance.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-yellow-400/20 text-yellow-400 text-xs">
-            <Flame className="w-3.5 h-3.5" />
-            {patient.streakDays}-day streak
-          </div>
+        <div className="flex items-center gap-2 rounded-full border border-primary/12 bg-secondary px-3 py-1.5 text-xs text-primary">
+          <Trophy className="h-3.5 w-3.5" />
+          {patient.streakDays}-day streak
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_320px] gap-6">
-        {/* Left: Tasks */}
-        <div className="space-y-4">
-          {/* Progress */}
-          <div className="glass-card rounded-2xl p-4 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium">Today&apos;s Progress</span>
-              <span className="text-sm text-primary font-bold">{completedCount}/{totalCount}</span>
+      <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="space-y-5">
+          <div className="glass-card rounded-[1.75rem] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-foreground">Week {todayRehab.week} active program</div>
+                <div className="mt-1 text-xs text-foreground/58">Today&apos;s tasks reflect the physician&apos;s current HR limit and symptom boundaries.</div>
+              </div>
+              <div className="text-sm font-semibold text-primary">{pct}% complete</div>
             </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div className="h-2 overflow-hidden rounded-full bg-secondary">
               <motion.div
-                className="h-full bg-primary rounded-full"
+                className="h-full rounded-full bg-primary"
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={{ duration: 0.7 }}
               />
             </div>
-            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-              <span>{pct}% complete</span>
-              {completedCount === totalCount && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-emerald-400 flex items-center gap-1"
-                >
-                  <Trophy className="w-3 h-3" />
-                  All done!
-                </motion.span>
-              )}
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                { label: 'Structured tasks', value: `${totalCount}`, icon: Activity },
+                { label: 'Wearable sync', value: `${WEEK_PROGRESS.totalSteps.toLocaleString()} steps`, icon: Watch },
+                { label: 'Push prompts', value: `${notifications.filter((n) => n.category === 'rehab').length} today`, icon: Bell },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                    <div className="mb-1 flex items-center gap-2 text-xs text-foreground/58">
+                      <Icon className="h-3.5 w-3.5 text-primary" />
+                      {item.label}
+                    </div>
+                    <div className="text-sm font-medium text-foreground">{item.value}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* AI Encouragement */}
-          {todayRehab.aiEncouragement && (
-            <div className="glass-card rounded-2xl p-4 border border-primary/15 flex gap-3">
-              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-                <Zap className="w-4 h-4 text-primary" />
+          {todayRehab.aiEncouragement ? (
+            <div className="glass-card rounded-[1.75rem] p-4">
+              <div className="flex gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/12">
+                  <Zap className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-sm leading-relaxed text-foreground/72">{todayRehab.aiEncouragement}</p>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{todayRehab.aiEncouragement}</p>
             </div>
-          )}
+          ) : null}
 
-          {/* Tasks */}
           <div className="space-y-3">
             {todayRehab.tasks.map((task) => (
               <TaskCard
@@ -333,32 +333,87 @@ export function RehabView() {
             ))}
           </div>
 
-          {/* Wall scenario */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="glass-card rounded-2xl p-4 border border-orange-400/15"
-          >
-            <div className="text-xs font-medium text-orange-400 mb-1 flex items-center gap-2">
-              <Heart className="w-3.5 h-3.5" />
-              Demo: Wall Scenario
+          <div className="glass-card rounded-[1.75rem] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-foreground">
+                <CalendarRange className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">12-week rehab roadmap</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedWeek((week) => Math.max(1, week - 1))}
+                  className="rounded-xl border border-border bg-white p-2 text-primary shadow-sm"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="min-w-[86px] text-center text-sm font-semibold text-foreground">Week {selectedWeek}</span>
+                <button
+                  onClick={() => setSelectedWeek((week) => Math.min(12, week + 1))}
+                  className="rounded-xl border border-border bg-white p-2 text-primary shadow-sm"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {generateEncouragement('wall')}
-            </p>
-          </motion.div>
+
+            <div className="rounded-[1.5rem] bg-secondary/55 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-primary">{weekPlan.title}</div>
+              <div className="mt-2 text-xl font-semibold text-foreground">{weekPlan.focus}</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {weekPlan.physicianGuardrails.map((guardrail) => (
+                  <span key={guardrail} className="rounded-full border border-border bg-white px-3 py-1 text-xs text-foreground/68">
+                    {guardrail}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                  <div className="text-xs uppercase tracking-[0.16em] text-foreground/52">Weekly steps</div>
+                  <div className="mt-1 text-2xl font-semibold text-foreground">{weekPlan.targetSteps.toLocaleString()}</div>
+                </div>
+                <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                  <div className="text-xs uppercase tracking-[0.16em] text-foreground/52">Planned minutes</div>
+                  <div className="mt-1 text-2xl font-semibold text-foreground">{weekPlan.totalMinutes}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {weekPlan.sessions.map((session) => (
+                <div key={session.id} className="rounded-[1.25rem] border border-border bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-foreground">{session.dayLabel} · {session.title}</div>
+                      <div className="mt-1 text-sm text-foreground/68">{session.focus}</div>
+                    </div>
+                    <span className={cn(
+                      'rounded-full px-3 py-1 text-xs',
+                      session.status === 'completed'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : session.status === 'today'
+                          ? 'bg-primary/12 text-primary'
+                          : 'bg-secondary text-foreground/68'
+                    )}>
+                      {session.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-foreground/58">
+                    <span>{session.durationMinutes} min</span>
+                    <span>Target HR &lt; {session.targetHR}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Right: Stress engine + weekly stats */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           <LiveStressEngine />
 
-          {/* Weekly stats */}
-          <div className="glass-card rounded-2xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Week {WEEK_PROGRESS.week} Progress</span>
+          <div className="glass-card rounded-[1.75rem] p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Weekly progression</span>
             </div>
             <div className="space-y-3">
               {[
@@ -370,31 +425,31 @@ export function RehabView() {
                   color: 'bg-primary',
                 },
                 {
-                  label: 'Tasks',
-                  current: String(WEEK_PROGRESS.tasksCompleted),
-                  target: String(WEEK_PROGRESS.totalTasks),
+                  label: 'Task adherence',
+                  current: `${WEEK_PROGRESS.tasksCompleted}`,
+                  target: `${WEEK_PROGRESS.totalTasks}`,
                   pct: (WEEK_PROGRESS.tasksCompleted / WEEK_PROGRESS.totalTasks) * 100,
-                  color: 'bg-emerald-400',
+                  color: 'bg-emerald-500',
                 },
                 {
-                  label: 'Days active',
-                  current: String(WEEK_PROGRESS.completedDays),
-                  target: String(WEEK_PROGRESS.totalDaysThisWeek),
+                  label: 'Active days',
+                  current: `${WEEK_PROGRESS.completedDays}`,
+                  target: `${WEEK_PROGRESS.totalDaysThisWeek}`,
                   pct: (WEEK_PROGRESS.completedDays / WEEK_PROGRESS.totalDaysThisWeek) * 100,
-                  color: 'bg-purple-400',
+                  color: 'bg-violet-400',
                 },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>{s.label}</span>
-                    <span>{s.current}/{s.target}</span>
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="mb-1 flex justify-between text-xs text-foreground/58">
+                    <span>{item.label}</span>
+                    <span>{item.current}/{item.target}</span>
                   </div>
-                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
                     <motion.div
-                      className={cn('h-full rounded-full', s.color)}
+                      className={cn('h-full rounded-full', item.color)}
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(s.pct, 100)}%` }}
-                      transition={{ duration: 0.8, delay: 0.3 }}
+                      animate={{ width: `${Math.min(item.pct, 100)}%` }}
+                      transition={{ duration: 0.8 }}
                     />
                   </div>
                 </div>
@@ -402,24 +457,26 @@ export function RehabView() {
             </div>
           </div>
 
-          {/* Milestones */}
-          <div className="glass-card rounded-2xl p-4 border border-border">
-            <div className="flex items-center gap-2 mb-3">
-              <Trophy className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold">Milestones</span>
+          <div className="glass-card rounded-[1.75rem] p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <History className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Backlog history for clinician review</span>
             </div>
-            <div className="space-y-1.5">
-              {patient.milestones.map((m, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                  <span className="text-muted-foreground">{m}</span>
+            <div className="space-y-2">
+              {REHAB_HISTORY.map((entry) => (
+                <div key={entry.id} className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="font-medium text-foreground">{new Date(entry.date).toLocaleDateString()}</span>
+                    <span className={cn(entry.completed ? 'text-emerald-700' : 'text-orange-700')}>
+                      {entry.completed ? 'Completed' : 'Interrupted'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-foreground/58">
+                    {entry.minutes} min · {entry.steps.toLocaleString()} steps · avg {entry.avgHR} BPM · peak {entry.maxHR} BPM
+                  </div>
+                  {entry.notes ? <div className="mt-1 text-xs text-foreground/58">{entry.notes}</div> : null}
                 </div>
               ))}
-              <div className="flex items-center gap-2 text-xs mt-2">
-                <Circle className="w-3.5 h-3.5 text-border flex-shrink-0" />
-                <span className="text-border">Complete Week 3</span>
-                <ChevronRight className="w-3 h-3 text-border ml-auto" />
-              </div>
             </div>
           </div>
         </div>

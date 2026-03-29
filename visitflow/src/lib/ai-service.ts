@@ -3,7 +3,13 @@
  * Abstracts OpenAI / Anthropic calls with graceful fallbacks for demo mode.
  */
 
-import type { TranscriptLine, CardioStressResult, RiskLevel } from './types';
+import type {
+  TranscriptLine,
+  CardioStressResult,
+  RiskLevel,
+  CardioVoiceAssessment,
+  CardioVoiceInput,
+} from './types';
 
 const ANTHROPIC_KEY = process.env.NEXT_PUBLIC_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
 const OPENAI_KEY = process.env.NEXT_PUBLIC_OPENAI_KEY || process.env.OPENAI_API_KEY;
@@ -47,11 +53,31 @@ export async function* streamTranscript(
 // ─── Translate doctor statement ───────────────────────────────────────────────
 
 export async function translateDoctorStatement(text: string): Promise<string> {
+  try {
+    const response = await fetch('/api/grounded-visit-explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statement: text }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (typeof data.explanation === 'string' && data.explanation.trim()) {
+        return data.explanation.trim();
+      }
+    }
+  } catch {
+    // Fall back below when the local route or network is unavailable.
+  }
+
   const prompt = `You are a medical translator helping a cardiac patient understand their doctor.
-Translate this medical statement into simple, calm, reassuring language in 1-2 sentences:
+Only explain what is explicitly stated in the doctor's advice below. Do not add new diagnoses, tests, risks, or medication changes.
+If anything is uncertain, say the doctor did not specify it.
+
+Doctor statement:
 "${text}"
 
-Respond with ONLY the plain-language explanation. No preamble.`;
+Respond with ONLY a plain-language explanation in 1-2 sentences.`;
 
   return callAI(prompt, getFallbackExplanation(text));
 }
@@ -72,7 +98,9 @@ export async function answerVisitQuestion(
   question: string,
   context: string
 ): Promise<string> {
-  const prompt = `You are a helpful medical AI assistant. A patient is asking a question about their recent cardiology visit.
+  const prompt = `You are a careful medical AI assistant. A patient is asking a question about their recent cardiology visit.
+Only answer using the doctor-provided visit context. Do not invent diagnoses, timelines, medication changes, or clearance.
+If the visit context does not support an answer, say that the doctor did not specify and suggest asking the care team.
 
 Visit context:
 ${context}
@@ -114,7 +142,7 @@ export function evaluateCardioStress(params: {
   activity: string;
   hrVariability: number;
 }): CardioStressResult {
-  const { currentHR, restingHR, maxHR, activity } = params;
+  const { currentHR, restingHR, maxHR } = params;
   const targetHR = restingHR + (maxHR - restingHR) * 0.5; // 50% HRR — Karvonen
   const upperLimit = restingHR + (maxHR - restingHR) * 0.6;
   const diff = currentHR - targetHR;
@@ -167,6 +195,38 @@ export function evaluateCardioStress(params: {
 export async function generateRehabPlan(week: number, compliance: number): Promise<string> {
   const prompt = `You are a cardiac rehabilitation AI. Generate a brief (3-4 sentences) personalized plan for Week ${week} of cardiac rehab. The patient's compliance last week was ${Math.round(compliance * 100)}%. Be specific, encouraging, and medically appropriate.`;
   return callAI(prompt, `Week ${week} plan: Continue building on your progress with daily walks and breathing exercises. Focus on consistency over intensity — your heart is still adapting. Aim for 20-30 minutes of gentle walking each day, keeping your heart rate in your safe zone.`);
+}
+
+export async function generateCommunityTransportSupport(params: {
+  zipCode: string;
+  tripPurpose: 'rehab-center' | 'cardiologist' | 'hospital';
+  context: string;
+}): Promise<string> {
+  try {
+    const response = await fetch('/api/community-support-match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (typeof data.plan === 'string' && data.plan.trim()) {
+        return data.plan.trim();
+      }
+    }
+  } catch {
+    // Fall back below.
+  }
+
+  const label =
+    params.tripPurpose === 'rehab-center'
+      ? 'cardiac rehab'
+      : params.tripPurpose === 'cardiologist'
+        ? 'cardiology follow-up'
+        : 'urgent hospital evaluation';
+
+  return `• Best route from ZIP ${params.zipCode}: choose the closest ${label} option in the support list.\n• Match with a verified community transport volunteer who already serves the Upper West Side.\n• Keep this plan aligned with the physician’s advice and escalate to family if symptoms worsen before travel.`;
 }
 
 // ─── Generate encouragement ───────────────────────────────────────────────────
@@ -233,7 +293,76 @@ export function detectEscalation(params: {
   return { level: 'none', message: '' };
 }
 
+// ─── CardioVoice+ multimodal assessment ──────────────────────────────────────
+
+export function assessCardioVoice(input: CardioVoiceInput): CardioVoiceAssessment {
+  const baselineSpo2 = input.baselineSpo2 ?? 98;
+  const spo2Drop = Math.max(0, baselineSpo2 - input.spo2);
+
+  const voiceFatigueScore = clamp(
+    ((input.speechRate - 95) / 55) * 40 +
+    ((input.pauseFrequency - 2) / 6) * 35 +
+    ((14 - input.phraseLength) / 8) * 25,
+    0,
+    100
+  );
+
+  const breathingIrregularity = clamp(
+    (Math.abs(input.inhaleExhaleTiming - 1.8) / 1.2) * 55 +
+    (input.breathInterruptions / 5) * 45,
+    0,
+    100
+  );
+
+  const spo2Impact = clamp(((100 - input.spo2) * 14) + spo2Drop * 8, 0, 100);
+  const weightedScore = 0.4 * voiceFatigueScore + 0.3 * breathingIrregularity + 0.3 * spo2Impact;
+  const riskScore = Math.round(clamp(weightedScore, 0, 100));
+
+  const riskLevel =
+    riskScore >= 65 || input.spo2 <= 92
+      ? 'high'
+      : riskScore >= 35 || input.spo2 <= 95
+        ? 'medium'
+        : 'low';
+
+  const explanation: string[] = [];
+
+  if (voiceFatigueScore >= 45) {
+    explanation.push('Voice fatigue markers increased, including slower pacing and more frequent pauses.');
+  }
+  if (breathingIrregularity >= 40) {
+    explanation.push('Breathing rhythm looks less regular, with more interruption than baseline.');
+  }
+  if (input.spo2 <= 95 || spo2Impact >= 35) {
+    explanation.push(`Oxygen saturation is below Maria's usual range at ${input.spo2}%.`);
+  }
+  if (explanation.length === 0) {
+    explanation.push('Voice, breathing, and oxygen signals are staying within a reassuring range today.');
+  }
+
+  const recommendation =
+    riskLevel === 'high'
+      ? 'Urgent review recommended. Pause exertion, contact the care team, and escalate if symptoms worsen.'
+      : riskLevel === 'medium'
+        ? 'Monitor closely before rehab today. Consider a lighter session and flag the result in pre-visit notes.'
+        : 'Continue monitoring. Signals look stable enough to proceed with the planned visit discussion.';
+
+  return {
+    riskLevel,
+    riskScore,
+    voiceFatigueScore: Math.round(voiceFatigueScore),
+    breathingIrregularity: Math.round(breathingIrregularity),
+    spo2Impact: Math.round(spo2Impact),
+    explanation,
+    recommendation,
+  };
+}
+
 // ─── Internal helpers ─────────────────────────────────────────────────────────
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
 async function callAI(prompt: string, fallback: string): Promise<string> {
   // Try Anthropic first

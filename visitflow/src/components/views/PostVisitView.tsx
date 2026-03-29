@@ -1,194 +1,286 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, Pill, ClipboardList, Brain, CheckSquare,
-  ChevronDown, ChevronUp, AlertTriangle, Calendar, Play
+  Calendar,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  Pill,
+  Bell,
+  ShieldAlert,
+  Brain,
+  ArrowRight,
 } from 'lucide-react';
-import type { Medication } from '@/lib/types';
+import { useAppStore } from '@/lib/store';
 import { CURRENT_VISIT, MOCK_TRANSCRIPT_LINES } from '@/lib/mock-data';
-import { answerVisitQuestion } from '@/lib/ai-service';
-import { cn } from '@/lib/utils';
+import { answerVisitQuestion, detectEscalation } from '@/lib/ai-service';
+import { cn, downloadCalendarEvent } from '@/lib/utils';
 
-function MedicationCard({ med }: { med: Medication }) {
-  const [open, setOpen] = useState(false);
+function SectionCard({
+  title,
+  icon: Icon,
+  children,
+  tone = 'default',
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+  tone?: 'default' | 'primary';
+}) {
   return (
-    <div className="glass rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-secondary/30 transition-colors"
-      >
-        <div className="w-8 h-8 rounded-lg bg-purple-400/20 flex items-center justify-center flex-shrink-0">
-          <Pill className="w-4 h-4 text-purple-400" />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-medium">{med.name} <span className="font-normal text-muted-foreground">{med.dose}</span></div>
-          <div className="text-xs text-muted-foreground">{med.frequency}</div>
-        </div>
-        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="px-3.5 pb-3.5 space-y-2"
-          >
-            <div className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Purpose:</span> {med.purpose}</div>
-            {med.sideEffects && (
-              <div className="text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Watch for:</span> {med.sideEffects.join(', ')}
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <section className={cn(
+      'glass-card rounded-[1.75rem] border p-5',
+      tone === 'primary' ? 'border-primary/20' : 'border-white/10'
+    )}>
+      <div className="mb-4 flex items-center gap-2">
+        <Icon className={cn('w-4 h-4', tone === 'primary' ? 'text-primary' : 'text-muted-foreground')} />
+        <h2 className="text-sm font-semibold">{title}</h2>
+      </div>
+      {children}
+    </section>
   );
 }
 
 export function PostVisitView() {
   const summary = CURRENT_VISIT.summary!;
+  const { medicationReminders, addNotification, setActiveView } = useAppStore();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
-  const [checklist, setChecklist] = useState(summary.instructions.map((i) => ({ text: i, done: false })));
+
+  const missedDoseCount = medicationReminders.filter((item) => item.missed).length;
+  const escalation = useMemo(
+    () =>
+      detectEscalation({
+        symptoms: missedDoseCount >= 2 ? ['medication nonadherence'] : [],
+        heartRate: 96,
+        alertHistory: missedDoseCount,
+      }),
+    [missedDoseCount]
+  );
 
   const askQuestion = async () => {
     if (!question.trim()) return;
     setLoading(true);
     setAnswer('');
-    const ctx = MOCK_TRANSCRIPT_LINES.map((l) => `${l.speaker}: ${l.text}`).join('\n');
+    const ctx = MOCK_TRANSCRIPT_LINES.map((line) => `${line.speaker}: ${line.text}`).join('\n');
     const result = await answerVisitQuestion(question, ctx);
     setAnswer(result);
     setLoading(false);
   };
 
-  const toggleCheck = (i: number) => {
-    setChecklist((prev) => prev.map((c, idx) => idx === i ? { ...c, done: !c.done } : c));
+  const addFollowUpToCalendar = () => {
+    downloadCalendarEvent({
+      title: 'Cardiology follow-up',
+      description: 'Repeat EKG and medication review with Dr. Okafor.',
+      start: '2026-04-12T14:00:00Z',
+      end: '2026-04-12T14:45:00Z',
+      location: 'Hudson Heart Institute',
+    });
+    addNotification({
+      id: `n-calendar-${Date.now()}`,
+      title: 'Follow-up added to calendar',
+      body: 'April 12 follow-up is now saved as a reminder.',
+      category: 'medication',
+      channel: 'in-app',
+      level: 'info',
+      timestamp: new Date(),
+      read: false,
+    });
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold">Post-Visit Intelligence</h1>
-        <p className="text-sm text-muted-foreground">March 29 · Dr. Okafor · Cardiology</p>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="mb-7 flex items-end justify-between gap-4">
+        <div>
+          <div className="editorial-kicker text-primary mb-2">After the visit</div>
+          <h1 className="text-3xl font-bold tracking-tight">Post-Visit Care Plan</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Structured summary, medication follow-through, and escalation if recovery slips.
+          </p>
+        </div>
+        <button
+          onClick={addFollowUpToCalendar}
+          className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-2"
+        >
+          <Calendar className="w-4 h-4" />
+          Add to calendar
+        </button>
       </div>
 
-      <div className="space-y-5">
-        {/* Diagnoses */}
-        <div className="glass-card rounded-2xl p-5 border border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-            <span className="font-semibold text-sm">Diagnoses</span>
-          </div>
-          <div className="space-y-2">
-            {summary.diagnosis.map((d, i) => (
-              <div key={i} className="flex items-center gap-2 px-3 py-2 glass rounded-xl text-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />
-                {d}
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="space-y-5">
+          <SectionCard title="Summary" icon={FileText} tone="primary">
+            <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+              <p><strong className="text-foreground">Visit outcome:</strong> Mild arrhythmia remains present, rehab continues, and medication support has started.</p>
+              <p><strong className="text-foreground">Clinical focus:</strong> keep exertion inside the safe zone, monitor symptom changes, and reassess rhythm at follow-up.</p>
+              <p><strong className="text-foreground">Patient takeaway:</strong> recovery is progressing, but the rhythm and medication response still need active monitoring.</p>
+            </div>
+          </SectionCard>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <SectionCard title="Diagnosis" icon={ShieldAlert}>
+              <div className="space-y-2">
+                {summary.diagnosis.map((item) => (
+                  <div key={item} className="rounded-xl border border-amber-400/15 bg-amber-400/5 p-3 text-sm text-muted-foreground">
+                    <div className="font-medium text-foreground mb-1">{item}</div>
+                    <div>
+                      {item.includes('arrhythmia')
+                        ? 'Slight rhythm irregularity needs monitoring, medication follow-through, and repeat EKG.'
+                        : 'This frames the broader recovery stage and keeps rehab recommendations aligned to healing progress.'}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </SectionCard>
 
-        {/* Medications */}
-        <div className="glass-card rounded-2xl p-5 border border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <Pill className="w-4 h-4 text-purple-400" />
-            <span className="font-semibold text-sm">Medications</span>
+            <SectionCard title="Follow-up" icon={Calendar}>
+              <div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
+                <div className="text-lg font-semibold mb-1">April 12, 2026</div>
+                <div className="text-sm text-muted-foreground mb-3">{summary.followUp}</div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div>• Repeat EKG</div>
+                  <div>• Medication tolerance check</div>
+                  <div>• Rehab intensity review</div>
+                </div>
+              </div>
+            </SectionCard>
           </div>
-          <div className="space-y-2">
-            {summary.medications.map((m) => (
-              <MedicationCard key={m.name} med={m} />
-            ))}
-          </div>
-        </div>
 
-        {/* Instructions checklist */}
-        <div className="glass-card rounded-2xl p-5 border border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <ClipboardList className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-sm">Follow-Up Instructions</span>
-          </div>
-          <div className="space-y-2">
-            {checklist.map((item, i) => (
+          <SectionCard title="Instructions" icon={ClipboardList}>
+            <div className="space-y-2">
+              {summary.instructions.map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3">
+                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-muted-foreground">{item}</div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Ask about this visit" icon={Brain}>
+            <div className="flex gap-2 mb-3">
+              <input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && askQuestion()}
+                placeholder="What does mild arrhythmia mean? What should I watch for this week?"
+                className="flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm outline-none focus:border-primary/40"
+              />
               <button
-                key={i}
-                onClick={() => toggleCheck(i)}
-                className={cn(
-                  'w-full flex items-start gap-3 p-3 rounded-xl text-left text-sm transition-colors',
-                  item.done ? 'opacity-50' : 'glass hover:bg-secondary/30'
-                )}
+                onClick={askQuestion}
+                disabled={!question.trim() || loading}
+                className="rounded-xl bg-white/[0.06] px-4 py-2.5 text-sm text-foreground border border-white/10 hover:bg-white/[0.08] transition-colors disabled:opacity-50"
               >
-                <CheckSquare className={cn('w-4 h-4 mt-0.5 flex-shrink-0', item.done ? 'text-emerald-400' : 'text-muted-foreground')} />
-                <span className={cn(item.done && 'line-through text-muted-foreground')}>{item.text}</span>
+                Ask
               </button>
-            ))}
-          </div>
+            </div>
+            <AnimatePresence>
+              {answer && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm text-muted-foreground leading-relaxed"
+                >
+                  {answer}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </SectionCard>
         </div>
 
-        {/* Follow-up */}
-        <div className="glass-card rounded-2xl p-5 border border-primary/15 flex gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <div className="font-semibold text-sm mb-1">Next Appointment</div>
-            <div className="text-sm text-muted-foreground">{summary.followUp}</div>
-          </div>
-        </div>
+        <div className="space-y-5">
+          <SectionCard title="Medications" icon={Pill} tone="primary">
+            <div className="space-y-3">
+              {summary.medications.map((med) => (
+                <div key={med.name} className="rounded-[1.25rem] border border-white/8 bg-white/[0.03] p-4">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <div className="text-base font-semibold">{med.name} <span className="text-muted-foreground font-normal">{med.dose}</span></div>
+                      <div className="text-sm text-muted-foreground mt-1">{med.purpose}</div>
+                    </div>
+                    <div className="rounded-full bg-purple-400/10 px-2.5 py-1 text-xs text-purple-300 border border-purple-400/20">
+                      {med.frequency}
+                    </div>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2 text-sm text-muted-foreground">
+                    <div className="rounded-xl border border-white/8 bg-black/15 p-3">
+                      <div className="editorial-kicker text-muted-foreground mb-1">Schedule</div>
+                      {(med.scheduleTimes ?? ['08:00']).map((time) => (
+                        <div key={time}>{time}</div>
+                      ))}
+                    </div>
+                    <div className="rounded-xl border border-white/8 bg-black/15 p-3">
+                      <div className="editorial-kicker text-muted-foreground mb-1">Adherence</div>
+                      <div>{med.adherenceRate ?? 100}% on time</div>
+                      <div className="mt-1 text-xs">{med.missedDoses ?? 0} missed doses this week</div>
+                    </div>
+                  </div>
+                  {med.sideEffects && (
+                    <div className="mt-3 rounded-xl border border-amber-400/15 bg-amber-400/5 p-3 text-sm text-muted-foreground">
+                      <strong className="text-foreground">Watch for:</strong> {med.sideEffects.join('; ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </SectionCard>
 
-        {/* Q&A */}
-        <div className="glass-card rounded-2xl p-5 border border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <Brain className="w-4 h-4 text-purple-400" />
-            <span className="font-semibold text-sm">Ask About This Visit</span>
-          </div>
-          <div className="flex gap-2 mb-3">
-            <input
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && askQuestion()}
-              placeholder="What is arrhythmia? What does metoprolol do?"
-              className="flex-1 bg-secondary/30 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary/50 placeholder:text-muted-foreground/50"
-            />
-            <button
-              onClick={askQuestion}
-              disabled={!question.trim() || loading}
-              className="px-4 py-2.5 rounded-xl bg-purple-400/20 text-purple-400 text-sm font-medium hover:bg-purple-400/30 transition-colors disabled:opacity-40 flex items-center gap-2"
-            >
-              {loading ? (
-                <div className="w-3.5 h-3.5 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
-              ) : <Play className="w-3.5 h-3.5" />}
-              Ask
-            </button>
-          </div>
-          <AnimatePresence>
-            {answer && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="p-3.5 rounded-xl bg-purple-400/5 border border-purple-400/15 text-sm text-muted-foreground leading-relaxed"
-              >
-                {answer}
-              </motion.div>
+          <SectionCard title="Medication reminders + adherence" icon={Bell}>
+            <div className="space-y-3">
+              {medicationReminders.map((reminder) => (
+                <div key={reminder.id} className="flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-white/[0.03] p-3">
+                  <div>
+                    <div className="text-sm font-medium">{reminder.medicationName}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(reminder.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                  <div className={cn(
+                    'rounded-full px-2.5 py-1 text-xs border',
+                    reminder.taken
+                      ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300'
+                      : reminder.missed
+                        ? 'border-red-500/20 bg-red-500/10 text-red-300'
+                        : 'border-white/10 bg-white/[0.04] text-muted-foreground'
+                  )}>
+                    {reminder.taken ? 'Taken' : reminder.missed ? 'Missed' : 'Pending'}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-xl border border-red-500/15 bg-red-500/7 p-4">
+              <div className="flex items-center gap-2 text-red-300 mb-2">
+                <ShieldAlert className="w-4 h-4" />
+                Escalation path
+              </div>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div>1. Missed dose triggers an in-app reminder.</div>
+                <div>2. Repeated misses trigger family follow-up.</div>
+                <div className="text-red-200">
+                  Example: “Maria missed 2 doses today. Please check on her.”
+                </div>
+              </div>
+            </div>
+            {missedDoseCount >= 2 && (
+              <div className="mt-4 rounded-xl border border-orange-400/15 bg-orange-400/7 p-4 text-sm text-orange-100">
+                <strong>Active escalation:</strong> {escalation.level === 'orange' || escalation.level === 'yellow'
+                  ? 'Repeated misses would notify the family contact and care team summary.'
+                  : 'Care team escalation ready.'}
+              </div>
             )}
-          </AnimatePresence>
+          </SectionCard>
 
-          {/* Replay link */}
-          <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
-            <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Full transcript available in</span>
-            <button
-              onClick={() => {/* navigate to live visit replay */}}
-              className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
-            >
-              Visit Replay <Play className="w-3 h-3" />
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveView('medications')}
+            className="w-full rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-4 py-4 text-left hover:bg-white/[0.05] transition-colors flex items-center justify-between"
+          >
+            <div>
+              <div className="text-sm font-semibold">Open medication workspace</div>
+              <div className="text-xs text-muted-foreground mt-1">Manage reminders, adherence, and calendar-based dose follow-up</div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
     </div>

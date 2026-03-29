@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desert Mirage</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .label {
+    position: fixed;
+    top: 20px;
+    left: 24px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(200, 149, 108, 0.5);
+    z-index: 10;
+    pointer-events: none;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<div class="label">Desert Mirage</div>
+<canvas id="canvas"></canvas>
+<script>
+(function () {
+  var canvas = document.getElementById('canvas');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var _pad = parseFloat(new URLSearchParams(location.search).get('p')) || 1;
+
+  var WIND_SPEED = 0.5;
+  var SHIMMER_INTENSITY = 1.0;
+
+  var gl = canvas.getContext('webgl', { alpha: false, antialias: false, preserveDrawingBuffer: false });
+  if (!gl) return;
+
+  var vertSrc = 'attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }';
+
+  var fragSrc = [
+    'precision highp float;',
+    'uniform float u_time;',
+    'uniform vec2 u_res;',
+    'uniform vec2 u_mouse;',
+    'uniform float u_wind;',
+    'uniform float u_shimmer;',
+    'uniform float u_pad;',
+    '',
+    '// ── Hash functions ──',
+    'float hash(vec2 p) {',
+    '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);',
+    '}',
+    '',
+    'vec2 hash2(vec2 p) {',
+    '  return vec2(',
+    '    fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453),',
+    '    fract(sin(dot(p, vec2(269.5, 183.3))) * 43758.5453)',
+    '  );',
+    '}',
+    '',
+    '// ── Smooth value noise ──',
+    'float vnoise(vec2 p) {',
+    '  vec2 i = floor(p);',
+    '  vec2 f = fract(p);',
+    '  f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);',
+    '  float a = hash(i);',
+    '  float b = hash(i + vec2(1.0, 0.0));',
+    '  float c = hash(i + vec2(0.0, 1.0));',
+    '  float d = hash(i + vec2(1.0, 1.0));',
+    '  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);',
+    '}',
+    '',
+    '// ── Gradient noise (smoother, directional) ──',
+    'vec2 gradHash(vec2 p) {',
+    '  vec3 r = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));',
+    '  r += dot(r, r.yzx + 33.33);',
+    '  return fract((r.xx + r.yz) * r.zy) * 2.0 - 1.0;',
+    '}',
+    '',
+    'float gnoise(vec2 p) {',
+    '  vec2 i = floor(p);',
+    '  vec2 f = fract(p);',
+    '  vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);',
+    '  float a = dot(gradHash(i), f);',
+    '  float b = dot(gradHash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));',
+    '  float c = dot(gradHash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));',
+    '  float d = dot(gradHash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));',
+    '  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y) * 0.5 + 0.5;',
+    '}',
+    '',
+    '// ── FBM using gradient noise ──',
+    'float fbm(vec2 p) {',
+    '  float v = 0.0;',
+    '  float a = 0.5;',
+    '  mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);',
+    '  for (int i = 0; i < 5; i++) {',
+    '    v += a * gnoise(p);',
+    '    p = rot * p * 2.07;',
+    '    a *= 0.48;',
+    '  }',
+    '  return v;',
+    '}',
+    '',
+    '// ── FBM with fewer octaves (for warping) ──',
+    'float fbm3(vec2 p) {',
+    '  float v = 0.0;',
+    '  float a = 0.5;',
+    '  mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);',
+    '  for (int i = 0; i < 3; i++) {',
+    '    v += a * gnoise(p);',
+    '    p = rot * p * 2.07;',
+    '    a *= 0.48;',
+    '  }',
+    '  return v;',
+    '}',
+    '',
+    '// ── Domain-warped FBM for dune patterns ──',
+    'float warpedFbm(vec2 p, float t) {',
+    '  // First warp layer',
+    '  vec2 q = vec2(',
+    '    fbm3(p + vec2(0.0, 0.0) + t * 0.04),',
+    '    fbm3(p + vec2(5.2, 1.3) + t * 0.03)',
+    '  );',
+    '  // Second warp layer (warp the warp)',
+    '  vec2 r = vec2(',
+    '    fbm3(p + 4.0 * q + vec2(1.7, 9.2) + t * 0.02),',
+    '    fbm3(p + 4.0 * q + vec2(8.3, 2.8) + t * 0.015)',
+    '  );',
+    '  return fbm(p + 3.5 * r);',
+    '}',
+    '',
+    'void main() {',
+    '  vec2 uv = gl_FragCoord.xy / u_res;',
+    '  float aspect = u_res.x / u_res.y;',
+    '  float t = u_time * u_wind;',
+    '',
+    '  // Mouse parallax offsets — inverted, scaled per layer depth',
+    '  vec2 mOff = -(u_mouse - 0.5);',
+    '  vec2 parallax1 = mOff * 0.15;',
+    '  vec2 parallax2 = mOff * 0.4;',
+    '  vec2 parallax3 = mOff * 0.8;',
+    '',
+    '  // ── Heat shimmer distortion ──',
+    '  vec2 shimmer = vec2(',
+    '    sin(uv.y * 12.0 + t * 3.5) * 0.002',
+    '    + sin(uv.y * 7.3 + t * 2.1 + 1.7) * 0.0015',
+    '    + sin(uv.x * 5.0 + uv.y * 9.0 + t * 4.2) * 0.001,',
+    '    cos(uv.x * 10.0 + t * 2.8) * 0.0015',
+    '    + cos(uv.x * 6.1 + t * 1.9 + 2.3) * 0.001',
+    '  ) * u_shimmer;',
+    '  vec2 distUV = uv + shimmer;',
+    '',
+    '  // Aspect-corrected UV for noise sampling',
+    '  vec2 auv = vec2(distUV.x * aspect, distUV.y);',
+    '',
+    '  // ── Layer 1: Base sand color gradient ──',
+    '  // Warm center, darker edges',
+    '  vec3 sandLight = vec3(0.76, 0.60, 0.42);',
+    '  vec3 sandDark  = vec3(0.55, 0.38, 0.22);',
+    '  vec3 sandDeep  = vec3(0.40, 0.28, 0.16);',
+    '  vec3 sandHigh  = vec3(0.88, 0.75, 0.58);',
+    '',
+    '  // Radial gradient: lighter center, darker edges',
+    '  vec2 center = vec2(0.5, 0.5);',
+    '  float radDist = length((distUV - center) * vec2(aspect, 1.0)) * 0.9;',
+    '  vec3 baseColor = mix(sandLight, sandDark, smoothstep(0.2, 0.9, radDist));',
+    '',
+    '  // ── Layer 2: Multi-scale dune patterns (domain-warped) ──',
+    '  // Large dunes',
+    '  vec2 duneUV1 = auv * 2.5 + parallax1;',
+    '  float dunes1 = warpedFbm(duneUV1, t);',
+    '',
+    '  // Medium ripples',
+    '  vec2 duneUV2 = auv * 6.0 + parallax2 + vec2(50.0);',
+    '  float dunes2 = fbm(duneUV2 + vec2(',
+    '    gnoise(auv * 3.0 + t * 0.06) * 0.3,',
+    '    gnoise(auv * 3.0 + 100.0 + t * 0.04) * 0.3',
+    '  ));',
+    '',
+    '  // Fine ripples',
+    '  vec2 duneUV3 = auv * 14.0 + parallax3 + vec2(100.0);',
+    '  float dunes3 = fbm(duneUV3 + vec2(',
+    '    gnoise(auv * 5.0 + t * 0.08) * 0.15,',
+    '    gnoise(auv * 5.0 + 50.0 + t * 0.05) * 0.15',
+    '  ));',
+    '',
+    '  // Combine dune scales',
+    '  float dunePattern = dunes1 * 0.50 + dunes2 * 0.28 + dunes3 * 0.14;',
+    '',
+    '  // Map dunes to color with wider tonal range',
+    '  float ridgeMask = smoothstep(0.3, 0.7, dunePattern);',
+    '',
+    '  // Color temperature shift: cooler shadows, warmer highlights',
+    '  vec3 coolShadow = sandDeep * vec3(0.85, 0.9, 1.05);',
+    '  vec3 warmHighlight = sandHigh * vec3(1.08, 1.02, 0.92);',
+    '  vec3 duneColor = mix(coolShadow, warmHighlight, ridgeMask);',
+    '  baseColor = mix(baseColor, duneColor, 0.75);',
+    '',
+    '  // Sharp crest highlights using narrow band detection',
+    '  float crestSharp = smoothstep(0.56, 0.62, dunePattern) * (1.0 - smoothstep(0.62, 0.74, dunePattern));',
+    '  baseColor += warmHighlight * crestSharp * 0.25;',
+    '',
+    '  // Broader ridge glow',
+    '  float ridgeGlow = smoothstep(0.55, 0.72, dunePattern);',
+    '  baseColor += vec3(0.08, 0.06, 0.03) * ridgeGlow;',
+    '',
+    '  // Deeper valley shadows',
+    '  float deepValley = 1.0 - smoothstep(0.2, 0.4, dunePattern);',
+    '  baseColor = mix(baseColor, coolShadow * 0.55, deepValley * 0.4);',
+    '',
+    '  // ── Layer 3: Organic sand grain texture ──',
+    '  // Multi-frequency grain (no regular pattern)',
+    '  vec2 grainCoord = gl_FragCoord.xy;',
+    '  float grain1 = hash(grainCoord * 0.8 + floor(u_time * 3.0)) * 2.0 - 1.0;',
+    '  float grain2 = hash(grainCoord * 1.7 + vec2(13.7, 91.1)) * 2.0 - 1.0;',
+    '  float grain3 = hash(grainCoord * 0.4 + vec2(71.3, 37.9) + floor(u_time * 1.5)) * 2.0 - 1.0;',
+    '',
+    '  float sandGrain = grain1 * 0.04 + grain2 * 0.025 + grain3 * 0.02;',
+    '',
+    '  // Organic micro-texture using noise instead of regular sine',
+    '  float micro1 = vnoise(gl_FragCoord.xy * 0.15 + vec2(t * 0.5, 0.0));',
+    '  float micro2 = vnoise(gl_FragCoord.xy * 0.25 + vec2(0.0, t * 0.3) + 50.0);',
+    '  sandGrain += (micro1 - 0.5) * 0.04 + (micro2 - 0.5) * 0.025;',
+    '',
+    '  // Grain is more visible on lit slopes, less in deep shadow',
+    '  float grainVisibility = 0.6 + ridgeMask * 0.4;',
+    '  baseColor += sandGrain * grainVisibility;',
+    '',
+    '  // ── Layer 4: Shifting sunlight patches ──',
+    '  float lightWave1 = gnoise(auv * 1.2 + vec2(t * 0.03, t * 0.02));',
+    '  float lightWave2 = gnoise(auv * 0.7 + vec2(-t * 0.02, t * 0.015) + 50.0);',
+    '  float lightPattern = lightWave1 * 0.6 + lightWave2 * 0.4;',
+    '  float lightBright = smoothstep(0.4, 0.7, lightPattern) * 0.15;',
+    '  baseColor += vec3(0.12, 0.09, 0.05) * lightBright;',
+    '',
+    '  // Caustic-like bright patches',
+    '  float caustic = gnoise(auv * 3.5 + vec2(t * 0.05, -t * 0.03));',
+    '  caustic *= gnoise(auv * 4.2 + vec2(-t * 0.04, t * 0.06) + 30.0);',
+    '  caustic = smoothstep(0.12, 0.3, caustic) * 0.1;',
+    '  baseColor += vec3(0.14, 0.10, 0.05) * caustic;',
+    '',
+    '  // ── Vignette (corners only) ──',
+    '  vec2 vigUV = distUV - 0.5;',
+    '  float vig = 1.0 - dot(vigUV * vec2(aspect, 1.0), vigUV * vec2(aspect, 1.0)) * 0.7;',
+    '  vig = smoothstep(0.0, 0.65, vig);',
+    '  baseColor *= mix(0.65, 1.0, vig);',
+    '',
+    '  // ── Film grain (temporal) ──',
+    '  float filmSeed = hash(gl_FragCoord.xy + fract(u_time * 173.17));',
+    '  baseColor += (filmSeed - 0.5) * 0.025;',
+    '',
+    '  // Clamp to valid range',
+    '  baseColor = clamp(baseColor, 0.0, 1.0);',
+    '',
+    '  gl_FragColor = vec4(baseColor, 1.0);',
+    '}',
+  ].join('\n');
+
+  function compile(type, src) {
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(s));
+    }
+    return s;
+  }
+
+  var prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vertSrc));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fragSrc));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(prog));
+  }
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  var aPos = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  var uTime = gl.getUniformLocation(prog, 'u_time');
+  var uRes = gl.getUniformLocation(prog, 'u_res');
+  var uMouse = gl.getUniformLocation(prog, 'u_mouse');
+  var uWind = gl.getUniformLocation(prog, 'u_wind');
+  var uShimmer = gl.getUniformLocation(prog, 'u_shimmer');
+  var uPad = gl.getUniformLocation(prog, 'u_pad');
+
+  var mouseX = 0.5, mouseY = 0.5;
+  var smoothMouseX = 0.5, smoothMouseY = 0.5;
+
+  canvas.addEventListener('mousemove', function (e) {
+    mouseX = e.clientX / canvas.clientWidth;
+    mouseY = 1.0 - e.clientY / canvas.clientHeight;
+  });
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var needsResize = true;
+
+  function resize() {
+    needsResize = false;
+    var w = Math.round(canvas.clientWidth * dpr);
+    var h = Math.round(canvas.clientHeight * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      gl.viewport(0, 0, w, h);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+    }
+  }
+
+  var running = true;
+  var lastTime = 0;
+
+  function render(now) {
+    if (!running) return;
+    if (needsResize) resize();
+
+    var dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 0.016;
+    lastTime = now;
+
+    // Smooth mouse
+    var lerpRate = Math.min(1.0, dt * 3.0);
+    smoothMouseX += (mouseX - smoothMouseX) * lerpRate;
+    smoothMouseY += (mouseY - smoothMouseY) * lerpRate;
+
+    var t = prefersReduced ? 0.0 : now * 0.001;
+
+    gl.uniform1f(uTime, t);
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform2f(uMouse, smoothMouseX, smoothMouseY);
+    gl.uniform1f(uWind, WIND_SPEED);
+    gl.uniform1f(uShimmer, SHIMMER_INTENSITY);
+    gl.uniform1f(uPad, _pad);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    requestAnimationFrame(render);
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      running = false;
+    } else {
+      running = true;
+      lastTime = 0;
+      requestAnimationFrame(render);
+    }
+  });
+
+  window.addEventListener('resize', function () {
+    needsResize = true;
+  });
+
+  resize();
+
+  requestAnimationFrame(render);
+
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.type === 'param') {
+      switch (e.data.name) {
+        case 'WIND_SPEED': WIND_SPEED = e.data.value; break;
+        case 'SHIMMER_INTENSITY': SHIMMER_INTENSITY = e.data.value; break;
+      }
+    }
+  });
+})();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"216c03e5eb1b42998a91f716785010f9","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

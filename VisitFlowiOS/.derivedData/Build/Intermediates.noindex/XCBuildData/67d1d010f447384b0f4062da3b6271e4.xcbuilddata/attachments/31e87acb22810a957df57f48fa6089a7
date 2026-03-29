@@ -1,0 +1,39 @@
+{
+  "" : {
+    "diagnostics" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOS-primary.dia",
+    "emit-module-dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOS-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOS-primary-emit-module.dia",
+    "pch" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOS-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOS-primary.swiftdeps"
+  },
+  "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/VisitFlowiOS/ContentView.swift" : {
+    "const-values" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/VisitFlowiOS/Models.swift" : {
+    "const-values" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.swiftconstvalues",
+    "dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.d",
+    "diagnostics" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.dia",
+    "index-unit-output-path" : "/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.o",
+    "llvm-bc" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.bc",
+    "object" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.o",
+    "swift-dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models.swiftdeps",
+    "swiftmodule" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/Models~partial.swiftmodule"
+  },
+  "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/VisitFlowiOS/VisitFlowiOSApp.swift" : {
+    "const-values" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.swiftconstvalues",
+    "dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.d",
+    "diagnostics" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.dia",
+    "index-unit-output-path" : "/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.o",
+    "llvm-bc" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.bc",
+    "object" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.o",
+    "swift-dependencies" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp.swiftdeps",
+    "swiftmodule" : "/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/.derivedData/Build/Intermediates.noindex/VisitFlowiOS.build/Debug-iphonesimulator/VisitFlowiOS.build/Objects-normal/arm64/VisitFlowiOSApp~partial.swiftmodule"
+  }
+}

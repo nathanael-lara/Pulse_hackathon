@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --background: #efefef;
+  --foreground: #56525f;
+  --muted: #9993a4;
+  --card: #ffffff;
+  --line: #ece6f3;
+  --primary: #8f71b8;
+  --primary-strong: #7754a2;
+  --accent: #b8d97b;
+  --success: #8fd18d;
+  --warning: #d8b564;
+  --danger: #d05b54;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+  background: #efefef;
+  color: var(--foreground);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--foreground);
+  background: #efefef;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 10px 12px 18px;
+}
+
+.noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+.phone-frame {
+  position: relative;
+  max-width: 430px;
+  min-height: calc(100vh - 20px);
+  margin: 0 auto;
+  border: 1px solid #ddd7e6;
+  border-radius: 34px;
+  overflow: hidden;
+  background: #efefef;
+  box-shadow: 0 20px 55px rgba(127, 107, 157, 0.18);
+}
+
+.safe-top {
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+.glass-card {
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(120, 95, 160, 0.08);
+}
+
+.section-title {
+  font-size: 0.82rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.nav-pill {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.scroll-area {
+  scrollbar-width: none;
+}
+
+.scroll-area::-webkit-scrollbar {
+  display: none;
+}
+
+button,
+input {
+  font: inherit;
+}
