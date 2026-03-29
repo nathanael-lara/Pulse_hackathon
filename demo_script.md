@@ -69,36 +69,14 @@
 
 ---
 
-### What Makes This Different
-
-- this is not a dashboard
-- this is not just reminders
-- this is a full recovery support system
-- one place for:
-- live visit explanations
-- medication adherence
-- 12-week rehab progression
-- document understanding
-- family and transport support
-
----
-
 ### The Hook: Why Patients Stay Engaged at Week 8
 
-- our hook is **supportive accountability**
-- by Week 8, fear fades
-- motivation drops
-- routines break
+- our hook and differentiator is **supportive accountability**
 - CorVas AI keeps patients engaged through:
-- a structured 12-week rehab plan
 - visible progress over time
 - emotionally supportive nudges
 - family and peer reinforcement
 - transport and care matching when logistics become the blocker
-- the patient always knows:
-- what happened
-- what is next
-- who can help
 
 ---
 
