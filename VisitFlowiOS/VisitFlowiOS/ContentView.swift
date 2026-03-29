@@ -19,6 +19,12 @@ struct ContentView: View {
     @State private var selectedWeek: Int = 3
     @State private var tripPurpose: TripPurpose = .rehab
     @State private var zipCode: String = "10024"
+    @State private var currentBullets: [String] = MockData.visitBullets[MockData.visitLines[0].id] ?? []
+    @State private var visitStatusMessage: String = "Tap a transcript line to view grounded guidance from the physician's exact advice."
+    @State private var savedMoments: Set<String> = []
+    @State private var medications: [MedicationItem] = MockData.medications
+    @State private var medicationBanner: String = "Medication reminders can be marked taken and saved to the calendar."
+    @State private var supportStatus: String = "Support matches are ready for ZIP 10024."
 
     private var weekPlan: RehabWeekPlan {
         MockData.rehabPlans.first(where: { $0.id == selectedWeek }) ?? MockData.rehabPlans[2]
@@ -53,9 +59,9 @@ struct ContentView: View {
     private var filteredProviders: [ProviderMatch] {
         switch tripPurpose {
         case .rehab:
-            return MockData.providerMatches.filter { $0.specialty.contains("rehab") || $0.name.contains("Rehab") }
+            return MockData.providerMatches.filter { $0.specialty.localizedCaseInsensitiveContains("rehab") || $0.name.localizedCaseInsensitiveContains("Rehab") }
         case .cardiology:
-            return MockData.providerMatches.filter { $0.specialty.contains("Cardiology") }
+            return MockData.providerMatches.filter { $0.specialty.localizedCaseInsensitiveContains("Cardiology") }
         case .hospital:
             return []
         }
@@ -114,14 +120,14 @@ struct ContentView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 0) {
-                        Text("Jinga")
+                        Text("CorVas")
                             .font(.system(size: 28, weight: .semibold))
                             .foregroundStyle(Palette.lavenderDark)
-                        Text("Life")
+                        Text(" AI")
                             .font(.system(size: 28, weight: .regular))
                             .foregroundStyle(Palette.textMuted)
                     }
-                    Text("SENIOR CARE RECORD")
+                    Text("CARDIAC RECOVERY RECORD")
                         .font(.system(size: 11, weight: .semibold))
                         .tracking(2.8)
                         .foregroundStyle(Palette.textMuted)
@@ -130,16 +136,21 @@ struct ContentView: View {
 
             Spacer()
 
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(Palette.lavender)
-                .frame(width: 44, height: 44)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Palette.line, lineWidth: 1)
-                )
+            Button {
+                selectedTab = .support
+            } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(Palette.lavender)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Palette.line, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
@@ -194,10 +205,10 @@ struct ContentView: View {
                 sectionLabel("MY HEALTH RECORD")
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    recordModule(icon: "pill.circle", title: "Medications", subtitle: "Schedules and reminders")
-                    recordModule(icon: "doc.text", title: "Documents", subtitle: "Visit summaries and labs")
-                    recordModule(icon: "cross.case.circle", title: "Medical Conditions", subtitle: "Screening and pre-visit checks")
-                    recordModule(icon: "person.2.circle", title: "Family & Support", subtitle: "Trusted circle and transport")
+                    recordModule(icon: "pill.circle", title: "Medications", subtitle: "Schedules and reminders", destination: .medication)
+                    recordModule(icon: "doc.text", title: "Documents", subtitle: "Visit summaries and labs", destination: .visit)
+                    recordModule(icon: "cross.case.circle", title: "Medical Conditions", subtitle: "Screening and pre-visit checks", destination: .visit)
+                    recordModule(icon: "person.2.circle", title: "Family & Support", subtitle: "Trusted circle and transport", destination: .support)
                 }
             }
 
@@ -237,6 +248,8 @@ struct ContentView: View {
                     ForEach(MockData.visitLines) { line in
                         Button {
                             selectedLine = line
+                            currentBullets = MockData.visitBullets[line.id] ?? []
+                            visitStatusMessage = "Showing the physician-grounded explanation for this selected moment."
                         } label: {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(line.speaker.uppercased())
@@ -266,7 +279,7 @@ struct ContentView: View {
                 sectionLabel("WHAT DID HE JUST SAY?")
 
                 VStack(spacing: 10) {
-                    ForEach(MockData.visitBullets[selectedLine.id] ?? [], id: \.self) { bullet in
+                    ForEach(currentBullets, id: \.self) { bullet in
                         HStack(alignment: .top, spacing: 12) {
                             Text("•")
                                 .font(.system(size: 24, weight: .medium))
@@ -286,6 +299,50 @@ struct ContentView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                     }
                 }
+
+                Text(visitStatusMessage)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Palette.textMuted)
+                    .padding(.top, 14)
+
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
+                    Button {
+                        currentBullets = MockData.visitBullets[selectedLine.id] ?? []
+                        visitStatusMessage = "Explaining simply using only the doctor's exact statement."
+                    } label: {
+                        actionButtonLabel("Explain simply", filled: true)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        currentBullets = (MockData.visitBullets[selectedLine.id] ?? []).map { "\($0) This matters for the current recovery plan and should be reviewed again at follow-up." }
+                        visitStatusMessage = "Expanded detail still stays inside the physician's stated plan."
+                    } label: {
+                        actionButtonLabel("Go deeper")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        currentBullets = [
+                            "Ask what symptoms should be reported before the next visit.",
+                            "Ask whether the rehab pace should change if fatigue worsens.",
+                            "Ask what the repeat EKG will confirm in two weeks."
+                        ]
+                        visitStatusMessage = "Generated next questions from the physician's existing advice only."
+                    } label: {
+                        actionButtonLabel("Ask next question")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        savedMoments.insert(selectedLine.id)
+                        visitStatusMessage = "Saved this physician moment for post-visit review."
+                    } label: {
+                        actionButtonLabel(savedMoments.contains(selectedLine.id) ? "Saved" : "Save")
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 14)
             }
         }
     }
@@ -294,7 +351,7 @@ struct ContentView: View {
         VStack(spacing: 16) {
             purplePanel(title: "MEDICATIONS", subtitle: "Large reminders and simple actions", systemImage: "pill.fill", addButton: true)
 
-            ForEach(MockData.medications) { medication in
+            ForEach(medications) { medication in
                 card {
                     VStack(alignment: .leading, spacing: 18) {
                         HStack(alignment: .top) {
@@ -317,25 +374,38 @@ struct ContentView: View {
                         }
 
                         HStack(spacing: 10) {
-                            actionButton("Mark taken", filled: true)
-                            actionButton("Add to calendar")
+                            Button {
+                                updateMedication(id: medication.id, status: medication.status == "TAKEN" ? "MISSED" : "TAKEN")
+                            } label: {
+                                actionButtonLabel(medication.status == "TAKEN" ? "Mark missed" : "Mark taken", filled: true)
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                medicationBanner = "\(medication.name) reminder was added to the calendar."
+                            } label: {
+                                actionButtonLabel("Add to calendar")
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
             }
 
             card {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "exclamationmark.shield.fill")
-                        .foregroundStyle(Palette.warning)
-                        .font(.system(size: 24))
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Important reminder")
-                            .font(.system(size: 22, weight: .medium))
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.shield.fill")
                             .foregroundStyle(Palette.warning)
-                        Text("Maria missed 2 doses today. Please check on her.")
-                            .font(.system(size: 19))
-                            .foregroundStyle(Palette.textPrimary)
+                            .font(.system(size: 24))
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Medication status")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(Palette.warning)
+                            Text(medicationBanner)
+                                .font(.system(size: 19))
+                                .foregroundStyle(Palette.textPrimary)
+                        }
                     }
                 }
             }
@@ -350,13 +420,9 @@ struct ContentView: View {
                     Button {
                         selectedWeek = max(1, selectedWeek - 1)
                     } label: {
-                        Image(systemName: "chevron.left")
-                            .foregroundStyle(Palette.lavenderDark)
-                            .frame(width: 38, height: 38)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.line, lineWidth: 1))
+                        iconButtonLabel("chevron.left")
                     }
+                    .buttonStyle(.plain)
 
                     Spacer()
                     Text("Week \(selectedWeek)")
@@ -367,13 +433,9 @@ struct ContentView: View {
                     Button {
                         selectedWeek = min(12, selectedWeek + 1)
                     } label: {
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(Palette.lavenderDark)
-                            .frame(width: 38, height: 38)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.line, lineWidth: 1))
+                        iconButtonLabel("chevron.right")
                     }
+                    .buttonStyle(.plain)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -437,28 +499,33 @@ struct ContentView: View {
                 sectionLabel("BACKLOG HISTORY")
                 VStack(spacing: 10) {
                     ForEach(MockData.rehabHistory) { entry in
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(entry.day)
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundStyle(Palette.textPrimary)
-                                Spacer()
-                                Text(entry.status.uppercased())
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .tracking(1.5)
+                        Button {
+                            supportStatus = "\(entry.day) history reviewed: \(entry.steps.formatted()) steps with avg HR \(entry.avgHR)."
+                        } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text(entry.day)
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundStyle(Palette.textPrimary)
+                                    Spacer()
+                                    Text(entry.status.uppercased())
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .tracking(1.5)
+                                        .foregroundStyle(Palette.textMuted)
+                                }
+                                Text("\(entry.steps.formatted()) steps • avg HR \(entry.avgHR)")
+                                    .font(.system(size: 18))
                                     .foregroundStyle(Palette.textMuted)
                             }
-                            Text("\(entry.steps.formatted()) steps • avg HR \(entry.avgHR)")
-                                .font(.system(size: 18))
-                                .foregroundStyle(Palette.textMuted)
+                            .padding(16)
+                            .background(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .stroke(Palette.line, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 22))
                         }
-                        .padding(16)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 22)
-                                .stroke(Palette.line, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -494,6 +561,14 @@ struct ContentView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.top, 12)
+
+                Button {
+                    supportStatus = "Generated a \(tripPurpose.rawValue.lowercased()) support plan for ZIP \(zipCode)."
+                } label: {
+                    actionButtonLabel("Generate match", filled: true)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 14)
             }
 
             card {
@@ -510,6 +585,11 @@ struct ContentView: View {
                     }
                     .padding(.vertical, 4)
                 }
+
+                Text(supportStatus)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Palette.textMuted)
+                    .padding(.top, 12)
             }
 
             if !filteredProviders.isEmpty {
@@ -517,23 +597,64 @@ struct ContentView: View {
                     sectionLabel("PROVIDER MATCHES")
                     VStack(spacing: 10) {
                         ForEach(filteredProviders) { provider in
+                            Button {
+                                supportStatus = "Matched to \(provider.name) for \(provider.specialty.lowercased())."
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(provider.name)
+                                            .font(.system(size: 21, weight: .medium))
+                                            .foregroundStyle(Palette.textPrimary)
+                                        Spacer()
+                                        Text("\(provider.distanceMiles, specifier: "%.1f") mi")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundStyle(Palette.lavenderDark)
+                                    }
+                                    Text(provider.specialty)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(Palette.lavender)
+                                    Text(provider.matchReason)
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(Palette.textMuted)
+                                    Text("\(provider.etaMinutes) min away • \(provider.address)")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Palette.textMuted)
+                                }
+                                .padding(16)
+                                .background(Color.white)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 22)
+                                        .stroke(Palette.line, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
+            card {
+                sectionLabel("COMMUNITY TRANSPORT")
+                VStack(spacing: 10) {
+                    ForEach(filteredTransport) { option in
+                        Button {
+                            supportStatus = "Requested \(option.name) for \(tripPurpose.rawValue.lowercased())."
+                        } label: {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text(provider.name)
+                                    Text(option.name)
                                         .font(.system(size: 21, weight: .medium))
                                         .foregroundStyle(Palette.textPrimary)
                                     Spacer()
-                                    Text("\(provider.distanceMiles, specifier: "%.1f") mi")
-                                        .font(.system(size: 15, weight: .semibold))
+                                    Text(option.trustLabel)
+                                        .font(.system(size: 14, weight: .semibold))
                                         .foregroundStyle(Palette.lavenderDark)
                                 }
-                                Text(provider.specialty)
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(Palette.lavender)
-                                Text(provider.matchReason)
+                                Text(option.role)
                                     .font(.system(size: 18))
                                     .foregroundStyle(Palette.textMuted)
-                                Text("\(provider.etaMinutes) min away • \(provider.address)")
+                                Text("\(option.distanceMiles, specifier: "%.1f") mi • \(option.availability) • \(option.seats) seats")
                                     .font(.system(size: 15))
                                     .foregroundStyle(Palette.textMuted)
                             }
@@ -545,38 +666,7 @@ struct ContentView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 22))
                         }
-                    }
-                }
-            }
-
-            card {
-                sectionLabel("COMMUNITY TRANSPORT")
-                VStack(spacing: 10) {
-                    ForEach(filteredTransport) { option in
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(option.name)
-                                    .font(.system(size: 21, weight: .medium))
-                                    .foregroundStyle(Palette.textPrimary)
-                                Spacer()
-                                Text(option.trustLabel)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Palette.lavenderDark)
-                            }
-                            Text(option.role)
-                                .font(.system(size: 18))
-                                .foregroundStyle(Palette.textMuted)
-                            Text("\(option.distanceMiles, specifier: "%.1f") mi • \(option.availability) • \(option.seats) seats")
-                                .font(.system(size: 15))
-                                .foregroundStyle(Palette.textMuted)
-                        }
-                        .padding(16)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 22)
-                                .stroke(Palette.line, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -585,27 +675,32 @@ struct ContentView: View {
                 sectionLabel("NEARBY CARE DISCOVERY")
                 VStack(spacing: 10) {
                     ForEach(filteredStops) { stop in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(stop.name)
-                                .font(.system(size: 21, weight: .medium))
-                                .foregroundStyle(Palette.textPrimary)
-                            Text(stop.kind)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Palette.lavender)
-                            Text("\(stop.distanceMiles, specifier: "%.1f") miles • \(stop.etaMinutes) min away")
-                                .font(.system(size: 16))
-                                .foregroundStyle(Palette.textMuted)
-                            Text(stop.address)
-                                .font(.system(size: 15))
-                                .foregroundStyle(Palette.textMuted)
+                        Button {
+                            supportStatus = "Opened nearby care option: \(stop.name)."
+                        } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(stop.name)
+                                    .font(.system(size: 21, weight: .medium))
+                                    .foregroundStyle(Palette.textPrimary)
+                                Text(stop.kind)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Palette.lavender)
+                                Text("\(stop.distanceMiles, specifier: "%.1f") miles • \(stop.etaMinutes) min away")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Palette.textMuted)
+                                Text(stop.address)
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(Palette.textMuted)
+                            }
+                            .padding(16)
+                            .background(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .stroke(Palette.line, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 22))
                         }
-                        .padding(16)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 22)
-                                .stroke(Palette.line, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -641,6 +736,18 @@ struct ContentView: View {
             Rectangle()
                 .fill(Palette.line)
                 .frame(height: 1)
+        }
+    }
+
+    private func updateMedication(id: String, status: String) {
+        medications = medications.map { item in
+            guard item.id == id else { return item }
+            return MedicationItem(id: item.id, name: item.name, dose: item.dose, time: item.time, status: status)
+        }
+        if let medication = medications.first(where: { $0.id == id }) {
+            medicationBanner = status == "TAKEN"
+                ? "\(medication.name) has been marked taken."
+                : "\(medication.name) has been marked missed. Family follow-up may be needed if this repeats."
         }
     }
 
@@ -699,7 +806,7 @@ struct ContentView: View {
             Spacer()
 
             if addButton {
-                Text("ADD +")
+                Text("ACTIVE")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Palette.lavender)
                     .padding(.horizontal, 14)
@@ -715,7 +822,7 @@ struct ContentView: View {
         .shadow(color: Palette.lavender.opacity(0.2), radius: 16, x: 0, y: 10)
     }
 
-    private func actionButton(_ title: String, filled: Bool = false) -> some View {
+    private func actionButtonLabel(_ title: String, filled: Bool = false) -> some View {
         Text(title)
             .font(.system(size: 18, weight: .medium))
             .foregroundStyle(filled ? Color.white : Palette.lavenderDark)
@@ -727,6 +834,15 @@ struct ContentView: View {
                     .stroke(filled ? Palette.lavender : Palette.line, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func iconButtonLabel(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .foregroundStyle(Palette.lavenderDark)
+            .frame(width: 38, height: 38)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.line, lineWidth: 1))
     }
 
     private func detailColumn(title: String, value: String) -> some View {
@@ -767,43 +883,48 @@ struct ContentView: View {
         .padding(.vertical, 10)
     }
 
-    private func recordModule(icon: String, title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 52, height: 52)
-                Circle()
-                    .stroke(Palette.line, lineWidth: 1)
-                    .frame(width: 52, height: 52)
-                Image(systemName: icon)
-                    .font(.system(size: 24))
+    private func recordModule(icon: String, title: String, subtitle: String, destination: MobileTab) -> some View {
+        Button {
+            selectedTab = destination
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 52, height: 52)
+                    Circle()
+                        .stroke(Palette.line, lineWidth: 1)
+                        .frame(width: 52, height: 52)
+                    Image(systemName: icon)
+                        .font(.system(size: 24))
+                        .foregroundStyle(Palette.lavender)
+                }
+
+                Text("HEALTH RECORD")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(2)
                     .foregroundStyle(Palette.lavender)
+
+                Text(title)
+                    .font(.system(size: 25, weight: .medium))
+                    .foregroundStyle(Palette.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(subtitle)
+                    .font(.system(size: 18))
+                    .foregroundStyle(Palette.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            Text("HEALTH RECORD")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(2)
-                .foregroundStyle(Palette.lavender)
-
-            Text(title)
-                .font(.system(size: 25, weight: .medium))
-                .foregroundStyle(Palette.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(subtitle)
-                .font(.system(size: 18))
-                .foregroundStyle(Palette.textMuted)
-                .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, minHeight: 210, alignment: .topLeading)
+            .padding(18)
+            .background(Palette.softBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Palette.line, lineWidth: 1)
+            )
         }
-        .frame(maxWidth: .infinity, minHeight: 210, alignment: .topLeading)
-        .padding(18)
-        .background(Palette.softBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(Palette.line, lineWidth: 1)
-        )
+        .buttonStyle(.plain)
     }
 
     private func statusPill(_ status: String) -> some View {

@@ -54,11 +54,11 @@ export function AppShell({ children }: AppShellProps) {
               </div>
               <div>
                 <div className="text-[1.75rem] font-semibold leading-none tracking-tight">
-                  <span className="text-primary">Jinga</span>
-                  <span className="text-muted-foreground">Life</span>
+                  <span className="text-primary">CorVas</span>
+                  <span className="text-muted-foreground">AI</span>
                 </div>
                 <div className="mt-1 text-[11px] uppercase tracking-[0.26em] text-muted-foreground">
-                  VisitFlow web record
+                  Cardiac recovery record
                 </div>
               </div>
             </div>
@@ -198,6 +198,7 @@ export function AppShell({ children }: AppShellProps) {
                   >
                     <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{item.category}</div>
                     <div className="mt-1 text-base text-foreground">{item.title}</div>
+                    <div className="mt-1 text-sm text-foreground/60 line-clamp-2">{item.body}</div>
                   </button>
                 ))}
               </div>

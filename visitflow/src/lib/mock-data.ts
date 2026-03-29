@@ -387,8 +387,8 @@ export const NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 'n-003',
-    title: 'Encouragement',
-    body: '11-day streak. One gentle walk today keeps the momentum going.',
+    title: '11-day recovery streak',
+    body: 'Maria has stayed engaged for 11 straight days. One gentle walk today keeps the cardiology plan moving forward.',
     channel: 'in-app',
     category: 'encouragement',
     level: 'info',

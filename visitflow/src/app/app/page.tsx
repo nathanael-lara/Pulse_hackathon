@@ -52,7 +52,7 @@ function LoadingShell() {
     <div className="h-screen flex items-center justify-center bg-background">
       <div className="flex items-center gap-3 text-muted-foreground">
         <Heart className="w-5 h-5 text-primary heartbeat" />
-        <span className="text-sm">Loading VisitFlow...</span>
+        <span className="text-sm">Loading CorVas AI...</span>
       </div>
     </div>
   );

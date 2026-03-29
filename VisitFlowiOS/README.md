@@ -1,4 +1,4 @@
-# VisitFlow iOS
+# CorVas AI iOS
 
 Native SwiftUI version of the `visitflow-iphone` concept, optimized for Xcode.
 

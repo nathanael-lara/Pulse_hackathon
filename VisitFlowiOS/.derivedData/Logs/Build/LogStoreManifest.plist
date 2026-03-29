@@ -48,6 +48,48 @@
 			<key>uniqueIdentifier</key>
 			<string>A54AB21A-6372-46C5-B462-9622A5FE616D</string>
 		</dict>
+		<key>ED627405-21C9-4C06-8A8E-9BF64D866177</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>ED627405-21C9-4C06-8A8E-9BF64D866177.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>VisitFlowiOS project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>VisitFlowiOS</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project VisitFlowiOS with scheme VisitFlowiOS</string>
+			<key>timeStartedRecording</key>
+			<real>796505132.88556004</real>
+			<key>timeStoppedRecording</key>
+			<real>796505137.71235096</real>
+			<key>title</key>
+			<string>Building project VisitFlowiOS with scheme VisitFlowiOS</string>
+			<key>uniqueIdentifier</key>
+			<string>ED627405-21C9-4C06-8A8E-9BF64D866177</string>
+		</dict>
 	</dict>
 </dict>
 </plist>

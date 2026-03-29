@@ -50,11 +50,11 @@ export default function LandingPage() {
               </div>
               <div>
                 <div className="text-[1.8rem] font-semibold tracking-tight">
-                  <span className="text-primary">Jinga</span>
-                  <span className="text-muted-foreground">Life</span>
+                  <span className="text-primary">CorVas</span>
+                  <span className="text-muted-foreground">AI</span>
                 </div>
                 <div className="text-[11px] uppercase tracking-[0.26em] text-muted-foreground">
-                  VisitFlow for cardiac recovery
+                  Cardiac recovery companion
                 </div>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default function LandingPage() {
                 <span className="text-gradient">built for calmer care.</span>
               </h1>
               <p className="mt-6 max-w-3xl text-xl leading-relaxed text-muted-foreground">
-                VisitFlow brings the JingaLife-style experience to cardiology follow-up:
+                CorVas AI brings the JingaLife-style experience to cardiology follow-up:
                 medications, visits, rehab, documents, and support all live in one
                 warm, understandable place instead of a stressful dashboard.
               </p>
@@ -167,7 +167,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="rounded-[1.6rem] bg-secondary px-5 py-5">
-                    <div className="text-sm uppercase tracking-[0.18em] text-primary">VisitFlow explains</div>
+                    <div className="text-sm uppercase tracking-[0.18em] text-primary">CorVas explains</div>
                     <div className="mt-3 space-y-2 text-lg text-foreground">
                       <div>• Your heart rhythm is a little irregular.</div>
                       <div>• It is not an emergency right now.</div>
@@ -229,7 +229,7 @@ export default function LandingPage() {
 
         <footer className="border-t border-border/80 bg-white/85 px-6 py-4 text-sm text-muted-foreground">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <span>VisitFlow AI for Pulse Hackathon 2026</span>
+            <span>CorVas AI for Pulse Hackathon 2026</span>
             <span className="hidden md:inline">JingaLife-inspired web adaptation for elder-friendly cardiac care</span>
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />

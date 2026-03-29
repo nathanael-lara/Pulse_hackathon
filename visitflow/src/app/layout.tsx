@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VisitFlow AI — Real-Time Cardiac Care",
+  title: "CorVas AI — Real-Time Cardiac Care",
   description: "AI-powered cardiac care co-pilot. Before, during, and after every visit.",
   keywords: ["cardiac rehab", "heart health", "AI health", "doctor visit"],
 };

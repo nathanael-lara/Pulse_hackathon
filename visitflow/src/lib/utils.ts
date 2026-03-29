@@ -19,7 +19,7 @@ export function downloadCalendarEvent(params: {
   const content = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//VisitFlow AI//EN',
+    'PRODID:-//CorVas AI//EN',
     'BEGIN:VEVENT',
     `UID:${Date.now()}@visitflow.ai`,
     `DTSTAMP:${toICSDate(new Date().toISOString())}`,
