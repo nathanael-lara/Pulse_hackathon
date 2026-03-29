@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Mic, MicOff, Volume2, VolumeX, Play, Square,
+  Mic, Volume2, VolumeX, Square,
   ChevronDown, ChevronUp, Stethoscope, Brain, User,
   AlertTriangle, Pill, ClipboardList, BookmarkPlus, RotateCcw
 } from 'lucide-react';
@@ -29,6 +29,14 @@ const TAG_COLORS = {
   risk: 'text-red-400 bg-red-400/10',
   followup: 'text-yellow-400 bg-yellow-400/10',
 };
+
+const DOCTOR_WAVE_BARS = [
+  { key: 1, peak: 14, duration: 0.5, delay: 0.08 },
+  { key: 2, peak: 18, duration: 0.62, delay: 0.16 },
+  { key: 3, peak: 12, duration: 0.46, delay: 0.24 },
+  { key: 4, peak: 20, duration: 0.58, delay: 0.32 },
+  { key: 5, peak: 16, duration: 0.52, delay: 0.4 },
+] as const;
 
 function TranscriptLineItem({
   line,
@@ -173,12 +181,12 @@ function DoctorAvatar({ isSpeaking }: { isSpeaking: boolean }) {
       </div>
       {isSpeaking && (
         <div className="mt-1.5 flex gap-1">
-          {[1,2,3,4,5].map((b) => (
+          {DOCTOR_WAVE_BARS.map((bar) => (
             <motion.div
-              key={b}
+              key={bar.key}
               className="w-0.5 bg-primary rounded-full"
-              animate={{ height: [4, 8 + Math.random() * 12, 4] }}
-              transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, delay: b * 0.08 }}
+              animate={{ height: [4, bar.peak, 4] }}
+              transition={{ duration: bar.duration, repeat: Infinity, delay: bar.delay }}
             />
           ))}
         </div>
@@ -247,7 +255,7 @@ function AIQuestionPanel({
 export function LiveVisitView() {
   const {
     isRecording, setIsRecording,
-    liveTranscript, addTranscriptLine,
+    addTranscriptLine, clearTranscript,
     expandedLineId, setExpandedLine,
     visitElapsed, setVisitElapsed,
     doctorMuted, toggleDoctorMuted,
@@ -263,45 +271,72 @@ export function LiveVisitView() {
   const [mode, setMode] = useState<'live' | 'replay'>('live');
   const transcriptRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lineTimerRefs = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  const elapsedRef = useRef(0);
+  const sessionRef = useRef(0);
+
+  const clearScheduledWork = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (endTimerRef.current) {
+      clearTimeout(endTimerRef.current);
+      endTimerRef.current = null;
+    }
+    lineTimerRefs.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    lineTimerRefs.current = [];
+  }, []);
 
   const startVisit = useCallback(() => {
+    clearScheduledWork();
+    sessionRef.current += 1;
+    const sessionId = sessionRef.current;
+
     setIsRecording(true);
     setDisplayLines([]);
     setCurrentSpeakingIdx(-1);
+    clearTranscript();
+    setExpandedLine(null);
+    elapsedRef.current = 0;
     setVisitElapsed(0);
 
     // Timer
     timerRef.current = setInterval(() => {
-      setVisitElapsed(useAppStore.getState().visitElapsed + 1);
-
+      elapsedRef.current += 1;
+      setVisitElapsed(elapsedRef.current);
     }, 1000);
 
     // Stream transcript lines
     MOCK_TRANSCRIPT_LINES.forEach((line, idx) => {
       const delay = line.timestamp * 1000 + 500;
-      lineTimerRef.current = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        if (sessionRef.current !== sessionId) return;
         const tLine = line as TranscriptLine;
         setDisplayLines((prev) => [...prev, tLine]);
         setCurrentSpeakingIdx(idx);
         addTranscriptLine(tLine);
       }, delay);
+      lineTimerRefs.current.push(timeoutId);
     });
 
     // End
     const lastDelay = (MOCK_TRANSCRIPT_LINES[MOCK_TRANSCRIPT_LINES.length - 1]?.timestamp ?? 0) * 1000 + 3000;
-    setTimeout(() => {
+    endTimerRef.current = setTimeout(() => {
+      if (sessionRef.current !== sessionId) return;
       setIsRecording(false);
       setCurrentSpeakingIdx(-1);
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearScheduledWork();
     }, lastDelay);
-  }, [setIsRecording, setVisitElapsed, addTranscriptLine]);
+  }, [addTranscriptLine, clearScheduledWork, clearTranscript, setExpandedLine, setIsRecording, setVisitElapsed]);
 
   const stopVisit = useCallback(() => {
+    sessionRef.current += 1;
     setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
     setCurrentSpeakingIdx(-1);
-  }, [setIsRecording]);
+    clearScheduledWork();
+  }, [clearScheduledWork, setIsRecording]);
 
   useEffect(() => {
     if (transcriptRef.current) {
@@ -311,9 +346,10 @@ export function LiveVisitView() {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      sessionRef.current += 1;
+      clearScheduledWork();
     };
-  }, []);
+  }, [clearScheduledWork]);
 
   const handleAsk = useCallback(async (q: string) => {
     setQuestionText(q);
@@ -471,7 +507,7 @@ export function LiveVisitView() {
               </div>
               <div className="font-medium mb-2">Ready to capture your visit</div>
               <div className="text-sm text-muted-foreground max-w-xs">
-                Press "Start Visit Recording" to begin live transcription with AI explanations
+                Press &quot;Start Visit Recording&quot; to begin live transcription with AI explanations
               </div>
             </div>
           ) : (

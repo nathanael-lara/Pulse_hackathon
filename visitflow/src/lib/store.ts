@@ -46,6 +46,7 @@ interface AppState {
   setActiveView: (view: string) => void;
   setRiskLevel: (level: RiskLevel) => void;
   addTranscriptLine: (line: TranscriptLine) => void;
+  clearTranscript: () => void;
   setExpandedLine: (id: string | null) => void;
   setIsRecording: (val: boolean) => void;
   setVisitElapsed: (s: number) => void;
@@ -86,6 +87,7 @@ export const useAppStore = create<AppState>((set) => ({
   setRiskLevel: (level) => set({ riskLevel: level }),
   addTranscriptLine: (line) =>
     set((s) => ({ liveTranscript: [...s.liveTranscript, line] })),
+  clearTranscript: () => set({ liveTranscript: [], expandedLineId: null }),
   setExpandedLine: (id) => set({ expandedLineId: id }),
   setIsRecording: (val) => set({ isRecording: val }),
   setVisitElapsed: (s) => set({ visitElapsed: s }),
