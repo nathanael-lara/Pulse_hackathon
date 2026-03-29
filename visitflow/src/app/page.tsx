@@ -90,9 +90,8 @@ export default function LandingPage() {
                 <span className="text-gradient">built for calmer care.</span>
               </h1>
               <p className="mt-6 max-w-3xl text-xl leading-relaxed text-muted-foreground">
-                CorVas AI brings the JingaLife-style experience to cardiology follow-up:
-                medications, visits, rehab, documents, and support all live in one
-                warm, understandable place instead of a stressful dashboard.
+                CorVas AI brings medications, visits, rehab, documents, and support
+                into one warm, understandable place instead of a stressful dashboard.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -230,7 +229,7 @@ export default function LandingPage() {
         <footer className="border-t border-border/80 bg-white/85 px-6 py-4 text-sm text-muted-foreground">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
             <span>CorVas AI for Pulse Hackathon 2026</span>
-            <span className="hidden md:inline">JingaLife-inspired web adaptation for elder-friendly cardiac care</span>
+            <span className="hidden md:inline">Cardiac care support designed for clarity at home</span>
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />
               <span>Accessible by design</span>
