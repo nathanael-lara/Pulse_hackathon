@@ -1,223 +1,131 @@
-export type RiskLevel = 'green' | 'yellow' | 'orange' | 'red';
+export type AppTab = 'today' | 'ask' | 'recovery' | 'medications' | 'support';
 
-export interface TranscriptLine {
-  id: string;
-  timestamp: number; // seconds from start
-  speaker: 'doctor' | 'patient' | 'ai';
-  text: string;
-  explanation?: string;
-  tags?: Array<'diagnosis' | 'medication' | 'instruction' | 'risk' | 'followup'>;
-  expanded?: boolean;
-}
+export type RiskTier = 'steady' | 'watch' | 'support' | 'urgent';
 
-export interface Visit {
-  id: string;
-  date: string;
-  doctor: string;
-  specialty: string;
-  duration: number; // minutes
-  transcript: TranscriptLine[];
-  summary?: VisitSummary;
-  riskLevel: RiskLevel;
-  status: 'scheduled' | 'live' | 'completed';
-}
+export type VoiceState = 'idle' | 'listening' | 'thinking' | 'responding' | 'error';
 
-export interface VisitSummary {
-  diagnosis: string[];
-  medications: Medication[];
-  instructions: string[];
-  followUp: string;
-  keyPoints: string[];
-}
-
-export interface Medication {
-  id?: string;
-  name: string;
-  dose: string;
-  frequency: string;
-  purpose: string;
-  sideEffects?: string[];
-  scheduleTimes?: string[];
-  adherenceRate?: number;
-  nextDoseAt?: string;
-  missedDoses?: number;
-}
-
-export interface HealthMetric {
-  timestamp: Date;
-  heartRate: number;
-  steps: number;
-  activity: 'resting' | 'light' | 'moderate' | 'vigorous';
-  bloodPressure?: { systolic: number; diastolic: number };
-}
-
-export interface RehabTask {
-  id: string;
-  type: 'walk' | 'breathe' | 'stretch' | 'rest';
-  title: string;
-  description: string;
-  duration: number; // minutes
-  targetHR?: number;
-  completed?: boolean;
-  skipped?: boolean;
-  completedAt?: Date;
-}
-
-export interface RehabDay {
-  date: string;
-  week: number;
-  day: number;
-  tasks: RehabTask[];
-  cardioStress?: CardioStressResult;
-  aiEncouragement?: string;
-}
-
-export interface CardioStressResult {
-  status: 'optimal' | 'elevated' | 'high' | 'critical';
-  currentHR: number;
-  expectedHR: number;
-  hrVariability: number;
-  recommendation: string;
-  shouldStop: boolean;
-}
-
-export interface Alert {
-  id: string;
-  timestamp: Date;
-  level: RiskLevel;
-  message: string;
-  source: 'symptom' | 'hr' | 'transcript' | 'behavior';
-  acknowledged: boolean;
-  sentToContacts?: boolean;
-}
-
-export interface Contact {
-  id: string;
-  name: string;
-  relation: string;
-  phone: string;
-  email: string;
-  notifyAt: Array<'orange' | 'red'>;
-  avatar?: string;
-}
-
-export interface Message {
-  id: string;
-  from: 'patient' | 'doctor' | 'ai';
-  text: string;
-  timestamp: Date;
-  linkedTo?: { type: 'visit' | 'medication' | 'rehab' | 'alert'; id: string };
-  aiSuggested?: boolean;
-  voiceNote?: {
-    durationSec: number;
-    transcript: string;
-  };
-}
-
-export interface Peer {
-  id: string;
-  name: string;
-  weekInProgram: number;
-  milestone?: string;
-  message?: string;
-  avatar?: string;
-  location?: string;
-  canDrive?: boolean;
-  trustLabel?: string;
-}
+export type ContactRole = 'family' | 'care-team' | 'coach' | 'support';
 
 export interface PatientProfile {
   id: string;
-  name: string;
+  fullName: string;
+  preferredName: string;
   age: number;
-  condition: string;
-  rehabWeek: number;
-  rehabDay: number;
-  streakDays: number;
-  milestones: string[];
-  riskLevel: RiskLevel;
-  contacts: Contact[];
+  programWeek: number;
+  recoveryGoal: string;
+  diagnosisSummary: string;
+  nextVisitDate: string;
+  careTeamName: string;
 }
 
-export interface Symptom {
+export interface CareContact {
   id: string;
   name: string;
-  severity: 1 | 2 | 3 | 4 | 5;
-  duration: string;
-  since: string;
-  notes?: string;
+  role: ContactRole;
+  relationship: string;
+  phone: string;
+  availability: string;
+  escalationLevel: Exclude<RiskTier, 'steady'>[];
+  videoLink?: string;
+  aiPromptHelp?: string[];
 }
 
-export interface NotificationItem {
-  id: string;
-  title: string;
-  body: string;
-  channel: 'in-app' | 'push' | 'sms';
-  category: 'rehab' | 'medication' | 'alert' | 'encouragement';
-  level?: RiskLevel | 'info';
-  timestamp: Date;
-  read: boolean;
+export interface OnboardingState {
+  completed: boolean;
+  preferredName: string;
+  recoveryGoal: string;
+  comfortWithTech: 'gentle' | 'standard';
+  reminderStyle: 'gentle' | 'spoken' | 'both';
+  largeText: boolean;
+  spokenReplies: boolean;
+  caregiverUpdates: boolean;
 }
 
-export interface MedicationReminder {
+// Anti-cheat verification system
+export interface VerificationData {
+  method: 'device-unlock' | 'geolocation' | 'heart-rate' | 'timestamp-window';
+  verified: boolean;
+  timestamp: string;
+  details?: Record<string, unknown>; // geo coords, HR value, etc
+}
+
+export interface MedicationDoseLog {
   id: string;
   medicationId: string;
-  medicationName: string;
-  scheduledFor: string;
-  taken: boolean;
-  missed: boolean;
-  snoozed?: boolean;
+  scheduledAt: string;
+  status: 'due' | 'taken' | 'skipped' | 'snoozed';
+  loggedAt?: string;
+  verifications?: VerificationData[]; // Device unlock + time window
+  unverifiedAttempts?: number; // Track failed verification attempts
 }
 
-export interface RehabHistoryEntry {
-  id: string;
-  date: string;
-  completed: boolean;
-  minutes: number;
-  steps: number;
-  avgHR: number;
-  maxHR: number;
-  notes?: string;
-}
-
-export interface MedicalDocument {
+export interface Medication {
   id: string;
   name: string;
-  type: 'Visit' | 'Diagnostic' | 'Rehab' | 'Clinical' | 'Record' | 'Lab' | 'Prescription';
-  date: string;
-  size: string;
-  summary: string;
-  keyValues?: Array<{
-    label: string;
-    value: string;
-    abnormal?: boolean;
-    explanation: string;
-  }>;
+  dose: string;
+  purpose: string;
+  instructions: string;
+  schedule: string[];
+  refillDate?: string;
+  doses: MedicationDoseLog[];
 }
 
-export interface CareLocation {
+export interface RecoverySession {
+  id: string;
+  week: number;
+  dayLabel: string;
+  title: string;
+  description: string;
+  durationMinutes: number;
+  target: string;
+  status: 'completed' | 'today' | 'upcoming' | 'missed';
+  completedAt?: string;
+}
+
+export interface RecoveryWeek {
+  week: number;
+  focus: string;
+  milestone: string;
+  status: 'completed' | 'current' | 'upcoming';
+  sessions: RecoverySession[];
+}
+
+export interface RecoverySetback {
+  id: string;
+  createdAt: string;
+  reason: 'fatigue' | 'transport' | 'worry' | 'symptoms' | 'schedule';
+  note: string;
+}
+
+export interface SymptomCheckIn {
+  id: string;
+  createdAt: string;
+  breathlessness: number;
+  dizziness: number;
+  fatigue: number;
+  chestDiscomfort: number;
+  worry: number;
+  note: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  sender: 'patient' | 'contact' | 'corvas';
+  contactId?: string;
+  body: string;
+  createdAt: string;
+  urgent?: boolean;
+}
+
+export interface CommunitySupportMember {
   id: string;
   name: string;
-  kind: 'hospital' | 'cardiologist' | 'rehab-center';
-  distanceMiles: number;
-  etaMinutes: number;
-  address: string;
-  zipCode?: string;
-  acceptsNewPatients?: boolean;
-  summary?: string;
-}
-
-export interface TransportMatch {
-  id: string;
-  driverName: string;
-  role: 'peer' | 'volunteer';
+  role: 'former-patient' | 'volunteer-driver' | 'care-coach';
+  area: string;
   distanceMiles: number;
   availability: string;
-  trustLabel: string;
-  seats: number;
-  zipCode?: string;
-  pickupArea?: string;
-  supports?: Array<'rehab' | 'hospital' | 'cardiology'>;
+  canDrive: boolean;
+  note: string;
 }
 
 export interface ProviderMatch {
@@ -226,58 +134,182 @@ export interface ProviderMatch {
   specialty: string;
   distanceMiles: number;
   etaMinutes: number;
-  address: string;
-  matchReason: string;
-  acceptingPatients: boolean;
+  offersVideo: boolean;
+  whyItFits: string;
+  videoLink?: string;
 }
 
-export interface CommunityTransportScenario {
-  zipCode: string;
-  placeName: string;
-  address: string;
-  kind: 'home' | 'hospital' | 'cardiologist' | 'rehab-center';
-  etaMinutes: number;
-  distanceMiles: number;
-  source: 'google-maps-sim';
-}
-
-export interface RehabPlanSession {
+export interface TransportOption {
   id: string;
-  dayLabel: string;
+  name: string;
+  type: 'community-van' | 'peer-driver' | 'rideshare-support' | 'telehealth-fallback';
+  maxDistanceMiles: number;
+  bookingLead: string;
+  details: string;
+}
+
+export interface EscalationEvent {
+  id: string;
+  tier: Exclude<RiskTier, 'steady'>;
+  createdAt: string;
   title: string;
-  focus: string;
+  message: string;
+  actionLabel: string;
+}
+
+export interface VisitSegment {
+  id: string;
+  speaker: 'doctor' | 'patient' | 'corvas';
+  title: string;
+  clinicalText: string;
+  simpleText: string;
+  followUpQuestions: string[];
+  tags: string[];
+}
+
+export interface DocumentItem {
+  id: string;
+  title: string;
+  source: 'visit-summary' | 'lab' | 'prescription' | 'upload';
+  createdAt: string;
+  plainSummary: string;
+  followUpQuestions: string[];
+  rawText?: string;
+}
+
+export interface CorvasChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  createdAt: string;
+  mode: 'voice' | 'text';
+}
+
+export interface DailyBrief {
+  headline: string;
+  encouragement: string;
+  nextBestAction: string;
+}
+
+export interface PreVisitPrepQuestion {
+  id: string;
+  question: string;
+  category: 'symptom' | 'medication' | 'activity' | 'diet' | 'concern';
+  priority: 'high' | 'medium' | 'low';
+  aiGenerated: boolean;
+  answered: boolean;
+  patientNote?: string;
+}
+
+export interface PreVisitPrepSession {
+  id: string;
+  visitDate: string;
+  generatedAt: string;
+  questions: PreVisitPrepQuestion[];
+  patientSummaryForDoctor?: string;
+}
+
+export interface LiveTranscriptSegment {
+  id: string;
+  timestamp: string;
+  rawText: string;
+  clinicalMoment?: string;
+  simpleExplanation?: string;
+  isExtracted: boolean;
+}
+
+export interface LiveTranscriptionSession {
+  id: string;
+  startedAt: string;
+  endedAt?: string;
+  segments: LiveTranscriptSegment[];
+  visitDate: string;
+}
+
+export interface MealLogEntry {
+  id: string;
+  createdAt: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  description: string;
+  sodiumMg: number;
+  caloriesEstimate?: number;
+  presetMealId?: string;
+  notes?: string;
+}
+
+export interface PresetMeal {
+  id: string;
+  name: string;
+  sodiumMg: number;
+  caloriesEstimate: number;
+  description: string;
+}
+
+export interface DailyNutritionSummary {
+  date: string;
+  totalSodiumMg: number;
+  mealCount: number;
+  sodiumBudgetMg: number;
+  adherentToMediterranean: boolean;
+}
+
+export type WearableDataSource = 'manual' | 'mock-apple-health' | 'mock-google-fit';
+
+export type HRZone = 'zone1' | 'zone2' | 'zone3' | 'zone4';
+
+export interface WearableSession {
+  id: string;
+  createdAt: string;
+  source: WearableDataSource;
+  activityType: 'walk' | 'swim' | 'bike' | 'stretch' | 'rest';
   durationMinutes: number;
-  targetHR: number;
-  status: 'completed' | 'today' | 'upcoming';
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  steps?: number;
+  hrZone?: HRZone;
+  exceededSafeThreshold: boolean;
+  notes?: string;
+  // Anti-cheat verification (optional - only set if verified)
+  isVerified?: boolean;
+  verifications?: VerificationData[];
 }
 
-export interface RehabWeekPlan {
-  week: number;
+export type NotificationType = 'medication' | 'daily-brief' | 'checkin-reminder' | 'visit-prep';
+
+export interface ScheduledNotification {
+  id: string;
+  type: NotificationType;
+  scheduledFor: string;
   title: string;
-  focus: string;
-  physicianGuardrails: string[];
-  targetSteps: number;
-  totalMinutes: number;
-  sessions: RehabPlanSession[];
+  body: string;
+  delivered: boolean;
+  notificationTimestamp?: string; // When notification was actually shown (for latency tracking)
 }
 
-export interface CardioVoiceInput {
-  voiceSeconds: number;
-  spo2: number;
-  baselineSpo2?: number;
-  speechRate: number;
-  pauseFrequency: number;
-  phraseLength: number;
-  inhaleExhaleTiming: number;
-  breathInterruptions: number;
+export interface WorkoutSession {
+  id: string;
+  createdAt: string;
+  activityType: 'walk' | 'swim' | 'bike' | 'stretch' | 'rest';
+  durationMinutes: number;
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  steps?: number;
+  hrZone?: HRZone;
+  exceededSafeThreshold: boolean;
+  verifications?: VerificationData[]; // Geolocation + HR validation
+  isVerified: boolean;
+  notes?: string;
 }
 
-export interface CardioVoiceAssessment {
-  riskLevel: 'low' | 'medium' | 'high';
-  riskScore: number;
-  voiceFatigueScore: number;
-  breathingIrregularity: number;
-  spo2Impact: number;
-  explanation: string[];
-  recommendation: string;
+export interface SuspiciousActivityScore {
+  userId: string;
+  scorePercentage: number; // 0-100
+  flags: {
+    consistentQuickClicks: boolean; // Always clicks <3 sec after notification
+    alwaysLogsWithinWindow: boolean; // Suspiciously perfect timing
+    noHRDataOnWorkouts: boolean; // Claims workouts but never logs HR
+    noGeoVariation: boolean; // Always logs from same location
+  };
+  lastUpdated: string;
+  escalationTriggered: boolean;
 }

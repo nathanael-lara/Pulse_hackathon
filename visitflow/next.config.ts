@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  env: {
-    NEXT_PUBLIC_ANTHROPIC_KEY: process.env.ANTHROPIC_API_KEY ?? '',
-    NEXT_PUBLIC_OPENAI_KEY: process.env.OPENAI_API_KEY ?? '',
-  },
+  // All API keys are now private, used only in server-side API routes
 };
 
 export default nextConfig;
