@@ -1,73 +1,100 @@
-# CorVas AI
+# CorVas
 
-CorVas AI is an AI-powered cardiac recovery companion built for the Pulse Foundry AI Healthcare Hackathon 2026. It helps patients understand their care, stay engaged with cardiac rehab, manage medications, and escalate to humans when recovery starts to drift into risk.
+CorVas is a senior-friendly cardiac recovery companion designed for people recovering after a heart event. It turns medications, rehab, visit explanations, symptom check-ins, and support coordination into one calm, mobile-first experience.
 
-This repository is organized around the actual demo submission, not the broader ideation workspace. The core submission app lives in `visitflow/`, with an additional native iOS presentation build in `VisitFlowiOS/`.
+## Live App
 
-## Why This Exists
+- Live site: https://corvas.netlify.app
+- GitHub repo: https://github.com/srijith-reddy/Pulse_hackathon
+- Main app route: https://corvas.netlify.app/app
 
-Cardiac rehab is one of the most effective interventions in recovery after a major cardiac event, but participation and completion remain low. Patients often leave the hospital with instructions, anxiety, and a long recovery plan, but without enough day-to-day support.
+Yes, the live link should be in the README. It makes the repo much easier to evaluate quickly.
 
-CorVas AI is designed to close that gap by turning recovery into a guided, explainable, and human-supported journey.
+## What CorVas Does
 
-## What Judges Should See
+- explains doctor language in plain English
+- helps patients ask better questions before and after visits
+- supports medication logging and adherence
+- tracks a simple 12-week recovery plan
+- captures symptom check-ins and risk signals
+- helps patients contact family, care team, and community support
+- coordinates logistics like rides, video follow-up, and nearby support
+- escalates concerns with calm, action-oriented guidance
 
-This project was shaped around the hackathon requirements:
+## Product Direction
 
-- A working demo, not just slides
-- A clear AI interaction with the patient
-- A visible hook that keeps patients engaged
-- A blueprint showing how the full system works
-- A public GitHub repo and live deployment
+This repository started as a hackathon project and has been pushed into a more production-leaning PWA experience for older adults.
 
-CorVas AI addresses those directly:
+The current app is:
 
-- AI interaction: live visit explanation, grounded Q&A, recovery nudges, risk-aware support
-- Hook: supportive accountability through rehab progress, family support, logistics help, and personalized encouragement
-- Blueprint: visit context, rehab data, medication behavior, and wearable-style signals flow into an AI support and escalation loop
+- PWA-first
+- mobile-first
+- senior-friendly
+- voice-forward
+- persistent across sessions
+- designed to feel reassuring instead of clinical or dashboard-heavy
 
-## Core Experience
+## Key Flows
 
-- Live visit transcription with plain-language AI explanations
-- Pre-visit preparation and question generation
-- Post-visit follow-up with grounded answers
-- Medication reminders and adherence support
-- 12-week rehab progress tracking
-- Document summaries in patient-friendly language
-- Family, peer, and care-circle messaging
-- Escalation logic for rising-risk recovery situations
+### Today
 
-## Submission Links
+The daily home surface focuses on:
 
-- Live demo: `ADD_DEPLOYED_URL_HERE`
-- GitHub repo: `ADD_GITHUB_URL_HERE`
-- Primary app route: `/app?view=live-visit`
+- the next best task
+- medication status
+- rehab progress
+- symptom check-in
+- pre-visit preparation when a visit is approaching
+- urgent help when risk rises
 
-## Demo Flow
+### Ask CorVas
 
-1. Open the live visit experience.
-2. Start the visit recording and show transcript streaming.
-3. Tap a clinical moment and show the AI translation in plain language.
-4. Move to rehab and simulate both a successful adherence moment and a risky setback.
-5. Show the escalation flow in messages and support surfaces.
-6. Return to the overview or landing page to show the system blueprint.
+Patients can:
 
-## Architecture
+- ask general recovery questions
+- review visit moments
+- simplify clinical language
+- review documents and follow-up questions
+- use a controlled ask flow that stays easy to demo and easy to understand
 
-```text
-Visit transcript
-Medication behavior
-Rehab progress
-Wearable-style signals
-        |
-        v
-    CorVas AI
-explain -> guide -> encourage -> detect risk
-        |
-        v
-Escalation layer
-family -> care team -> support services
-```
+### Recovery Plan
+
+- week-by-week rehab structure
+- milestone tracking
+- setback logging
+- encouraging progress language
+
+### Medication Support
+
+- mark doses as taken, skipped, or snoozed
+- review adherence
+- get gentle follow-up when recovery drifts
+
+### Support
+
+- text, call, or video follow-up with care contacts
+- request transport and provider help
+- connect with community support
+- track support requests through pending and connected states
+- use urgent escalation actions when needed
+
+## Urgent Escalation
+
+CorVas now automates urgent escalation inside the app flow.
+
+That means it can:
+
+- detect urgent symptom patterns
+- create urgent alerts automatically
+- show `Call 911 now` only for urgent states
+- notify a saved caregiver if the patient opted in
+- notify the care team with an urgent summary if the patient opted in
+- include saved location context if the patient chose to share it
+
+What it does not do:
+
+- place a real 911 call automatically
+- silently contact EMS in the background
 
 ## Tech Stack
 
@@ -76,13 +103,13 @@ family -> care team -> support services
 - Tailwind CSS
 - Framer Motion
 - Zustand
-- OpenAI and Anthropic model abstraction
-- SwiftUI companion app for iOS presentation
+- Netlify deployment
+- SwiftUI companion app in `VisitFlowiOS/`
 
-## Project Structure
+## Repository Structure
 
 ```text
-visitflow/          Main hackathon web app
+visitflow/          Main web app
 VisitFlowiOS/       Native iOS presentation build
 visitflow-iphone/   Earlier mobile web prototype
 ```
@@ -97,26 +124,53 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000/app`.
+
+### Production build
+
+```bash
+cd visitflow
+npm run build
+npm run start
+```
 
 ### iOS app
 
 Open:
 
-`/Users/nathanlara/Desktop/Pulse_Hackathon/VisitFlowiOS/VisitFlowiOS.xcodeproj`
+`VisitFlowiOS/VisitFlowiOS.xcodeproj`
 
-Use the `VisitFlowiOS` scheme in Xcode and run on an iPhone simulator.
+Then run the `VisitFlowiOS` scheme in Xcode.
 
 ## Environment
 
-The app expects local API keys for supported providers.
+Copy the example env file:
 
 ```bash
 cp .env.example .env
 ```
 
-Then provide the required values locally. Do not commit secrets.
+Then add any provider keys you want to use locally. Do not commit secrets.
 
-## Repository Notes
+## Current Status
 
-The repo originally included ideation files, raw source materials, local build output, and unrelated visual experiments used during exploration. The submission-facing README and `.gitignore` now prioritize the actual competition deliverable so the project is easier for judges and collaborators to understand quickly.
+What is real today:
+
+- persistent local product state
+- PWA installability
+- onboarding and settings
+- medication, recovery, symptom, support, and escalation flows
+- support request states that move from pending to connected
+
+What is still mocked or controlled:
+
+- some AI reply behavior
+- document extraction beyond basic text handling
+- external messaging and care-system integrations
+- real clinical backend and EHR connections
+
+## Why This Repo Exists
+
+Cardiac recovery often fails not because patients do not care, but because recovery is confusing, lonely, and hard to coordinate day to day.
+
+CorVas is meant to reduce that burden by making the next step clear, translating medical language, and helping patients get support before recovery goes off track.
