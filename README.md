@@ -5,10 +5,6 @@ CorVas is a senior-friendly cardiac recovery companion designed for people recov
 ## Live App
 
 - Live site: https://corvas.netlify.app
-- GitHub repo: https://github.com/srijith-reddy/Pulse_hackathon
-- Main app route: https://corvas.netlify.app/app
-
-Yes, the live link should be in the README. It makes the repo much easier to evaluate quickly.
 
 ## What CorVas Does
 
