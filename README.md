@@ -100,7 +100,6 @@ What it does not do:
 - Framer Motion
 - Zustand
 - Netlify deployment
-- SwiftUI companion app in `VisitFlowiOS/`
 
 ## Repository Structure
 
