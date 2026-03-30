@@ -55,12 +55,6 @@ export default function LandingPage() {
                 >
                   Open the app
                 </Link>
-                <Link
-                  href="/app?view=ask"
-                  className="inline-flex min-h-14 items-center justify-center rounded-full border border-[var(--color-panel-border)] bg-white px-6 text-lg font-semibold text-slate-900"
-                >
-                  Try the voice guide
-                </Link>
               </div>
             </div>
 
@@ -105,4 +99,3 @@ export default function LandingPage() {
     </main>
   );
 }
-
