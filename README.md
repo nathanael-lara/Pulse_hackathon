@@ -106,8 +106,6 @@ What it does not do:
 
 ```text
 visitflow/          Main web app
-VisitFlowiOS/       Native iOS presentation build
-visitflow-iphone/   Earlier mobile web prototype
 ```
 
 ## Local Development
@@ -129,14 +127,6 @@ cd visitflow
 npm run build
 npm run start
 ```
-
-### iOS app
-
-Open:
-
-`VisitFlowiOS/VisitFlowiOS.xcodeproj`
-
-Then run the `VisitFlowiOS` scheme in Xcode.
 
 ## Environment
 
