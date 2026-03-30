@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChangeEvent, ReactNode } from 'react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BellRing, CarFront, MessageCircleHeart, Mic, MicOff, Phone, Send, Settings2, Video } from 'lucide-react';
 import {
   PrimaryButton,
@@ -51,10 +51,13 @@ export function SupportScreen({
     patient,
     contacts,
     supportMessages,
+    supportRequests,
     symptomCheckIns,
     escalations,
     updateOnboarding,
     addSupportMessage,
+    createSupportRequest,
+    connectSupportRequest,
     sendEscalationOutreach,
     reopenOnboarding,
     setActiveTab,
@@ -85,9 +88,29 @@ export function SupportScreen({
       })),
     [contacts, supportMessages]
   );
+  const recentRequests = useMemo(
+    () =>
+      [...supportRequests].sort((a, b) => +new Date(b.requestedAt) - +new Date(a.requestedAt)),
+    [supportRequests]
+  );
   const transportOptions = useMemo(() => getTransportRecommendations(TRANSPORT_OPTIONS, travelMiles), [travelMiles]);
   const providerOptions = useMemo(() => getProviderRecommendations(PROVIDER_MATCHES, travelMiles), [travelMiles]);
   const communityMatches = useMemo(() => getCommunityMatches(COMMUNITY_SUPPORT_MEMBERS, travelMiles), [travelMiles]);
+
+  useEffect(() => {
+    const pendingRequests = supportRequests.filter((request) => request.status === 'pending');
+    const timeouts = pendingRequests.map((request) => {
+      const elapsed = Date.now() - new Date(request.requestedAt).getTime();
+      const waitMs = Math.max(600, 3500 - elapsed);
+      return window.setTimeout(() => {
+        connectSupportRequest(request.id);
+      }, waitMs);
+    });
+
+    return () => {
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+    };
+  }, [connectSupportRequest, supportRequests]);
 
   function notifyCaregiver() {
     if (!topEscalation || topEscalation.tier !== 'urgent' || !emergencyContact) return;
@@ -174,6 +197,15 @@ export function SupportScreen({
     setSupportNotice(`This alert was added to your support thread for ${selectedContact?.name ?? 'the care team'}.`);
   }
 
+  function focusConnectedContact(contactId?: string, name?: string, prompt?: string) {
+    if (!contactId) return;
+    setSelectedContactId(contactId);
+    if (prompt) {
+      setMessage(prompt);
+    }
+    setSupportNotice(`${name ?? 'This contact'} is ready above for message, call, or voice note.`);
+  }
+
   return (
     <div className="space-y-6">
       <ScreenTitle
@@ -198,7 +230,7 @@ export function SupportScreen({
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {contacts.filter((contact) => contact.role === 'care-team' || contact.role === 'family').map((contact) => (
+              {contacts.filter((contact) => contact.role === 'care-team' || contact.role === 'family' || contact.role === 'community').map((contact) => (
                 <button
                   key={contact.id}
                   type="button"
@@ -333,6 +365,65 @@ export function SupportScreen({
 
             {supportPanel === 'thread' ? (
               <div className="mt-5 space-y-3">
+                {recentRequests.slice(0, 4).map((request) => (
+                  <div key={request.id} className="rounded-[22px] border border-[var(--color-panel-border)] bg-white px-4 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          {request.kind} request
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold text-slate-950">{request.targetName}</h3>
+                      </div>
+                      <span
+                        className={`inline-flex min-h-10 items-center rounded-full px-3 text-sm font-semibold ${
+                          request.status === 'connected'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {request.status === 'connected' ? 'Connected' : 'Pending'}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-base leading-7 text-slate-700">
+                      {request.status === 'connected' ? request.connectedText : request.pendingText}
+                    </p>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      {request.status === 'pending' ? (
+                        <SecondaryButton disabled>
+                          Waiting for reply
+                        </SecondaryButton>
+                      ) : (
+                        <>
+                          {request.contactId ? (
+                            <PrimaryButton onClick={() => focusConnectedContact(request.contactId, request.targetName, request.messagePrompt)}>
+                              Message {request.targetName.split(' ')[0]}
+                            </PrimaryButton>
+                          ) : null}
+                          {request.phone ? (
+                            <a
+                              href={`tel:${request.phone.replace(/[^\d+]/g, '')}`}
+                              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[var(--color-panel-border)] bg-white px-5 py-3 text-base font-semibold text-slate-900"
+                            >
+                              <Phone className="h-5 w-5" />
+                              Call
+                            </a>
+                          ) : null}
+                          {request.videoLink ? (
+                            <a
+                              href={request.videoLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[var(--color-panel-border)] bg-white px-5 py-3 text-base font-semibold text-slate-900"
+                            >
+                              <Video className="h-5 w-5" />
+                              {request.actionLabel ?? 'Schedule'}
+                            </a>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
                 {thread.slice(-6).map((item) => (
                   <div
                     key={item.id}
@@ -465,6 +556,24 @@ export function SupportScreen({
                                 ? 'We sent a video-visit request to your care team. This thread will update when they confirm whether the visit can be converted.'
                                 : `We sent a ride-support request for ${option.name}. This thread will update when scheduling is confirmed.`;
                             addSupportMessage(request, selectedContactId, false, followUp);
+                            createSupportRequest({
+                              kind: 'transport',
+                              targetId: option.id,
+                              targetName: option.name,
+                              summary: request,
+                              pendingText: option.type === 'telehealth-fallback'
+                                ? 'Video follow-up request sent to the care team.'
+                                : 'Ride request sent and waiting for confirmation.',
+                              connectedText: option.type === 'telehealth-fallback'
+                                ? 'Your care team opened a video-visit path for this request.'
+                                : `${option.name} is ready to coordinate this trip.`,
+                              phone: option.phone,
+                              messagePrompt: option.type === 'telehealth-fallback'
+                                ? 'I would like to confirm whether my next visit can be by video.'
+                                : `I am following up on the ${option.name.toLowerCase()} request for my visit.`,
+                              actionLabel: option.type === 'telehealth-fallback' ? 'Open visit option' : undefined,
+                            });
+                            setSupportPanel('thread');
                             setSupportNotice(
                               option.type === 'telehealth-fallback'
                                 ? 'Video follow-up request sent.'
@@ -513,6 +622,25 @@ export function SupportScreen({
                             ? `${provider.name} was added to your thread. We asked about a video follow-up and will update this conversation when the care team confirms.`
                             : `${provider.name} was added to your thread for follow-up planning. We will update this conversation when scheduling is confirmed.`;
                           addSupportMessage(request, selectedContactId, false, followUp);
+                          createSupportRequest({
+                            kind: 'provider',
+                            targetId: provider.id,
+                            targetName: provider.name,
+                            summary: request,
+                            pendingText: provider.offersVideo
+                              ? 'Follow-up request sent. Waiting for scheduling or video confirmation.'
+                              : 'Follow-up request sent. Waiting for scheduling confirmation.',
+                            connectedText: provider.offersVideo
+                              ? `${provider.name} is ready for follow-up. You can call, message, or open the video option.`
+                              : `${provider.name} is ready for follow-up. You can call or message from this support screen.`,
+                            phone: provider.phone,
+                            videoLink: provider.videoLink,
+                            relationshipLabel: provider.specialty,
+                            availability: `About ${provider.etaMinutes} minutes away`,
+                            messagePrompt: `I would like to follow up with ${provider.name}.`,
+                            actionLabel: provider.offersVideo ? 'Open video option' : undefined,
+                          });
+                          setSupportPanel('thread');
                           setSupportNotice(`Follow-up request sent for ${provider.name}.`);
                         }}
                       >
@@ -559,6 +687,27 @@ export function SupportScreen({
                                 ? `We sent a coaching connection request to ${member.name}. If they accept, they will appear in your support thread for phone or video follow-up.`
                                 : `We sent a support connection request to ${member.name}. If they accept, they will appear in your support thread.`;
                           addSupportMessage(request, selectedContactId, false, followUp);
+                          createSupportRequest({
+                            kind: 'community',
+                            targetId: member.id,
+                            targetName: member.name,
+                            summary: request,
+                            pendingText: `${member.name} has your request and has not replied yet.`,
+                            connectedText: member.role === 'care-coach'
+                              ? `${member.name} accepted. You can now message, call, or schedule time together from this thread.`
+                              : `${member.name} accepted. You can now message or call from this support screen.`,
+                            phone: member.phone,
+                            videoLink: member.videoLink,
+                            relationshipLabel: member.role.replace('-', ' '),
+                            availability: member.availability,
+                            messagePrompt: member.role === 'care-coach'
+                              ? `Hi ${member.name.split(' ')[0]}, I would like help preparing my next questions.`
+                              : member.role === 'volunteer-driver'
+                                ? `Hi ${member.name.split(' ')[0]}, I may need help with a ride for an upcoming visit.`
+                                : `Hi ${member.name.split(' ')[0]}, thank you for offering support. I would like to connect.`,
+                            actionLabel: member.videoLink ? 'Schedule support' : undefined,
+                          });
+                          setSupportPanel('thread');
                           setSupportNotice(`Connection request sent to ${member.name}.`);
                         }}
                       >

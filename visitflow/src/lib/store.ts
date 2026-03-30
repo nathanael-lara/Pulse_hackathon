@@ -37,6 +37,7 @@ import type {
   RecoverySetback,
   RecoveryWeek,
   ScheduledNotification,
+  SupportRequest,
   SupportMessage,
   SuspiciousActivityScore,
   SymptomCheckIn,
@@ -56,6 +57,7 @@ interface AppState {
   setbacks: RecoverySetback[];
   symptomCheckIns: SymptomCheckIn[];
   supportMessages: SupportMessage[];
+  supportRequests: SupportRequest[];
   visitSegments: VisitSegment[];
   documents: DocumentItem[];
   activeDocumentId: string;
@@ -87,6 +89,8 @@ interface AppState {
   logRecoverySetback: (reason: RecoverySetback['reason'], note: string) => void;
   addSymptomCheckIn: (payload: Omit<SymptomCheckIn, 'id' | 'createdAt'>) => void;
   addSupportMessage: (body: string, contactId?: string, urgent?: boolean, responseOverride?: string) => void;
+  createSupportRequest: (request: Omit<SupportRequest, 'id' | 'requestedAt' | 'status'>) => void;
+  connectSupportRequest: (requestId: string) => void;
   sendEscalationOutreach: (params: {
     contactId: string;
     summary: string;
@@ -129,6 +133,7 @@ export const useAppStore = create<AppState>()(
       setbacks: INITIAL_SETBACKS,
       symptomCheckIns: INITIAL_CHECK_INS,
       supportMessages: INITIAL_SUPPORT_MESSAGES,
+      supportRequests: [],
       visitSegments: VISIT_SEGMENTS,
       documents: DOCUMENTS,
       activeDocumentId: DOCUMENTS[0]?.id ?? '',
@@ -302,6 +307,78 @@ export const useAppStore = create<AppState>()(
 
           return {
             supportMessages: [...state.supportMessages, patientMessage, corvasReply],
+          };
+        }),
+
+      createSupportRequest: (request) =>
+        set((state) => ({
+          supportRequests: [
+            ...state.supportRequests.filter((item) => !(item.kind === request.kind && item.targetId === request.targetId && item.status !== 'connected')),
+            {
+              ...request,
+              id: makeId('support-request'),
+              requestedAt: new Date().toISOString(),
+              status: 'pending',
+            },
+          ],
+        })),
+
+      connectSupportRequest: (requestId) =>
+        set((state) => {
+          const targetRequest = state.supportRequests.find((request) => request.id === requestId);
+          if (!targetRequest || targetRequest.status === 'connected') return {};
+
+          let contacts = state.contacts;
+          let contactId = targetRequest.contactId;
+
+          if (targetRequest.kind !== 'transport' && targetRequest.phone) {
+            const existingContact = state.contacts.find(
+              (contact) => contact.name === targetRequest.targetName || contact.id === targetRequest.contactId
+            );
+
+            if (existingContact) {
+              contactId = existingContact.id;
+            } else {
+              contactId = `connected-${targetRequest.kind}-${targetRequest.targetId}`;
+              contacts = [
+                ...state.contacts,
+                {
+                  id: contactId,
+                  name: targetRequest.targetName,
+                  role: targetRequest.kind === 'provider' ? 'care-team' : 'community',
+                  relationship: targetRequest.relationshipLabel ?? (targetRequest.kind === 'provider' ? 'Follow-up option' : 'Community support'),
+                  phone: targetRequest.phone,
+                  availability: targetRequest.availability ?? 'Reply expected soon',
+                  escalationLevel: ['support', 'urgent'],
+                  videoLink: targetRequest.videoLink,
+                  aiPromptHelp: targetRequest.messagePrompt ? [targetRequest.messagePrompt] : undefined,
+                },
+              ];
+            }
+          }
+
+          return {
+            contacts,
+            supportRequests: state.supportRequests.map((request) =>
+              request.id === requestId
+                ? {
+                    ...request,
+                    status: 'connected',
+                    contactId,
+                  }
+                : request
+            ),
+            supportMessages: [
+              ...state.supportMessages,
+              {
+                id: makeId('support'),
+                sender: 'corvas',
+                contactId,
+                urgent: false,
+                createdAt: new Date().toISOString(),
+                body: targetRequest.connectedText,
+              },
+            ],
           };
         }),
 
@@ -492,6 +569,7 @@ export const useAppStore = create<AppState>()(
         setbacks: state.setbacks,
         symptomCheckIns: state.symptomCheckIns,
         supportMessages: state.supportMessages,
+        supportRequests: state.supportRequests,
         documents: state.documents,
         activeDocumentId: state.activeDocumentId,
         selectedVisitSegmentId: state.selectedVisitSegmentId,

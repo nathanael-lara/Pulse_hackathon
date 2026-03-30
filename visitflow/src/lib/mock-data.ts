@@ -122,6 +122,7 @@ export const COMMUNITY_SUPPORT_MEMBERS: CommunitySupportMember[] = [
     availability: 'Tue and Thu mornings',
     canDrive: true,
     note: 'Finished cardiac rehab last year and now helps with ride coordination.',
+    phone: '+1 (555) 312-8891',
   },
   {
     id: 'community-james',
@@ -132,6 +133,7 @@ export const COMMUNITY_SUPPORT_MEMBERS: CommunitySupportMember[] = [
     availability: 'Most weekdays after 1 PM',
     canDrive: true,
     note: 'Can take patients to rehab, cardiology visits, and pharmacy pickups.',
+    phone: '+1 (555) 774-2210',
   },
   {
     id: 'community-linda',
@@ -142,6 +144,8 @@ export const COMMUNITY_SUPPORT_MEMBERS: CommunitySupportMember[] = [
     availability: 'Video or phone support any evening',
     canDrive: false,
     note: 'Former patient who helps others prepare questions and stay encouraged.',
+    phone: '+1 (555) 611-4438',
+    videoLink: 'https://meet.jit.si/corvas-linda-support',
   },
 ];
 
@@ -154,6 +158,7 @@ export const PROVIDER_MATCHES: ProviderMatch[] = [
     etaMinutes: 38,
     offersVideo: true,
     whyItFits: 'Best match for rhythm follow-up because he already knows the case.',
+    phone: '+1 (555) 650-2244',
     videoLink: 'https://meet.jit.si/corvas-cardiology-demo',
   },
   {
@@ -164,6 +169,7 @@ export const PROVIDER_MATCHES: ProviderMatch[] = [
     etaMinutes: 16,
     offersVideo: true,
     whyItFits: 'Closer rehab option with lower travel burden and virtual coaching backup.',
+    phone: '+1 (555) 814-3302',
     videoLink: 'https://meet.jit.si/corvas-rehab-demo',
   },
   {
@@ -174,6 +180,7 @@ export const PROVIDER_MATCHES: ProviderMatch[] = [
     etaMinutes: 14,
     offersVideo: false,
     whyItFits: 'Best in-person match if distance is becoming the main barrier.',
+    phone: '+1 (555) 908-6117',
   },
 ];
 
@@ -185,6 +192,7 @@ export const TRANSPORT_OPTIONS: TransportOption[] = [
     maxDistanceMiles: 15,
     bookingLead: 'Book 24 hours ahead',
     details: 'Matched with former cardiac patients or local volunteers who can drive to rehab and follow-up visits.',
+    phone: '+1 (555) 730-1120',
   },
   {
     id: 'transport-van',
@@ -193,6 +201,7 @@ export const TRANSPORT_OPTIONS: TransportOption[] = [
     maxDistanceMiles: 35,
     bookingLead: 'Book 48 hours ahead',
     details: 'Wheelchair-friendly van for longer appointment trips when family is not available.',
+    phone: '+1 (555) 730-1121',
   },
   {
     id: 'transport-rideshare',
@@ -201,6 +210,7 @@ export const TRANSPORT_OPTIONS: TransportOption[] = [
     maxDistanceMiles: 25,
     bookingLead: 'Same day if approved',
     details: 'Backup ride credit for essential visits when other options fall through.',
+    phone: '+1 (555) 730-1122',
   },
   {
     id: 'transport-video',
@@ -209,6 +219,7 @@ export const TRANSPORT_OPTIONS: TransportOption[] = [
     maxDistanceMiles: 999,
     bookingLead: 'Same day',
     details: 'If distance or fatigue is the problem, convert appropriate follow-up visits to video.',
+    phone: '+1 (555) 650-2244',
   },
 ];
 

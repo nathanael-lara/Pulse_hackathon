@@ -4,7 +4,7 @@ export type RiskTier = 'steady' | 'watch' | 'support' | 'urgent';
 
 export type VoiceState = 'idle' | 'listening' | 'thinking' | 'responding' | 'error';
 
-export type ContactRole = 'family' | 'care-team' | 'coach' | 'support';
+export type ContactRole = 'family' | 'care-team' | 'coach' | 'support' | 'community';
 
 export interface PatientProfile {
   id: string;
@@ -130,6 +130,8 @@ export interface CommunitySupportMember {
   availability: string;
   canDrive: boolean;
   note: string;
+  phone: string;
+  videoLink?: string;
 }
 
 export interface ProviderMatch {
@@ -140,6 +142,7 @@ export interface ProviderMatch {
   etaMinutes: number;
   offersVideo: boolean;
   whyItFits: string;
+  phone: string;
   videoLink?: string;
 }
 
@@ -150,6 +153,30 @@ export interface TransportOption {
   maxDistanceMiles: number;
   bookingLead: string;
   details: string;
+  phone?: string;
+}
+
+export type SupportRequestKind = 'transport' | 'provider' | 'community';
+
+export type SupportRequestStatus = 'pending' | 'connected';
+
+export interface SupportRequest {
+  id: string;
+  kind: SupportRequestKind;
+  targetId: string;
+  targetName: string;
+  status: SupportRequestStatus;
+  requestedAt: string;
+  summary: string;
+  pendingText: string;
+  connectedText: string;
+  phone?: string;
+  videoLink?: string;
+  contactId?: string;
+  relationshipLabel?: string;
+  availability?: string;
+  messagePrompt?: string;
+  actionLabel?: string;
 }
 
 export interface EscalationEvent {
