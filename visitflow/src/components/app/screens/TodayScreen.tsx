@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Activity, Apple, ArrowRight, Calendar, CheckCircle2, HeartPulse, Loader, Mic, Phone, Pill, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { MetricTile, PrimaryButton, ScreenTitle, SectionCard, SecondaryButton, SegmentedTabs, SmallAction, StatusBadge } from '@/components/app/ui';
-import { getMedicationSummary, getRecoverySummary, getTodaysCheckIn, getMotivationalMessage } from '@/lib/corvas-logic';
+import { buildUrgentEscalationSummary, getMedicationSummary, getRecoverySummary, getTodaysCheckIn, getMotivationalMessage } from '@/lib/corvas-logic';
 import { buildPatientContextPackage } from '@/lib/context-builder';
 import { useAppStore } from '@/lib/store';
 import type { MealLogEntry, PreVisitPrepQuestion } from '@/lib/types';
@@ -62,6 +62,7 @@ export function TodayScreen() {
     chatHistory,
     addSymptomCheckIn,
     markDoseStatus,
+    sendEscalationOutreach,
     setActiveTab,
     setPreVisitPrep,
     markPrepQuestionAnswered,
@@ -93,6 +94,9 @@ export function TodayScreen() {
   const recoverySummary = useMemo(() => getRecoverySummary(recoveryWeeks), [recoveryWeeks]);
   const todaysCheckIn = getTodaysCheckIn(symptomCheckIns);
   const topEscalation = escalations[0];
+  const emergencyContact =
+    contacts.find((contact) => contact.id === onboarding.emergencyContactId)
+    ?? contacts.find((contact) => contact.role === 'family');
   const nextDose = medicationSummary.doses.find((dose) => dose.status !== 'taken');
   const [form, setForm] = useState({
     breathlessness: todaysCheckIn?.breathlessness ?? 1,
@@ -137,6 +141,24 @@ export function TodayScreen() {
     if (todaysSodium < 1000) return 'text-emerald-600';
     if (todaysSodium < 1400) return 'text-amber-600';
     return 'text-red-600';
+  }
+
+  function notifyEmergencyContact() {
+    if (!topEscalation || topEscalation.tier !== 'urgent' || !emergencyContact) return;
+
+    const summary = buildUrgentEscalationSummary({
+      patientName: patient.preferredName,
+      event: topEscalation,
+      latestCheckIn: todaysCheckIn ?? symptomCheckIns[0],
+      locationLabel: onboarding.shareLocationForAlerts ? onboarding.locationLabel : undefined,
+    });
+
+    sendEscalationOutreach({
+      contactId: emergencyContact.id,
+      summary,
+      source: 'manual-caregiver',
+    });
+    setActiveTab('support');
   }
 
   async function getDietSuggestions() {
@@ -504,6 +526,11 @@ export function TodayScreen() {
               <p className="mt-2 text-base leading-7 text-slate-700">{topEscalation.message}</p>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <PrimaryButton onClick={() => setActiveTab('support')}>{topEscalation.actionLabel}</PrimaryButton>
+                {topEscalation.tier === 'urgent' && emergencyContact ? (
+                  <SecondaryButton onClick={notifyEmergencyContact}>
+                    Notify {emergencyContact.relationship.toLowerCase()}
+                  </SecondaryButton>
+                ) : null}
                 {topEscalation.tier === 'urgent' ? (
                   <a
                     href="tel:911"

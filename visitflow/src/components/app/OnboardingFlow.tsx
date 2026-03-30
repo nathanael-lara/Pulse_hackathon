@@ -50,8 +50,9 @@ const STEPS = [
 ] as const;
 
 export function OnboardingFlow() {
-  const { onboarding, updateOnboarding, completeOnboarding } = useAppStore();
+  const { onboarding, contacts, updateOnboarding, completeOnboarding } = useAppStore();
   const [step, setStep] = useState(0);
+  const familyContacts = contacts.filter((contact) => contact.role === 'family');
 
   const progress = useMemo(
     () => Math.round(((step + 1) / STEPS.length) * 100),
@@ -213,12 +214,52 @@ export function OnboardingFlow() {
               )}
 
               {step === 5 && (
-                <ToggleRow
-                  label="Suggest updates to family or trusted helpers"
-                  description="CorVas will gently suggest sharing an update if recovery gets off track."
-                  checked={onboarding.caregiverUpdates}
-                  onChange={(value) => updateOnboarding({ caregiverUpdates: value })}
-                />
+                <>
+                  <ToggleRow
+                    label="Notify my caregiver in urgent situations"
+                    description="If something urgent comes up, CorVas can alert the person you trust most."
+                    checked={onboarding.caregiverUpdates}
+                    onChange={(value) => updateOnboarding({ caregiverUpdates: value })}
+                  />
+                  <div className="grid gap-3">
+                    {familyContacts.map((contact) => (
+                      <button
+                        key={contact.id}
+                        type="button"
+                        onClick={() => updateOnboarding({ emergencyContactId: contact.id })}
+                        className={`rounded-[22px] border px-4 py-4 text-left text-base ${
+                          onboarding.emergencyContactId === contact.id
+                            ? 'border-[var(--color-teal-deep)] bg-[var(--color-panel-highlight)] text-slate-900'
+                            : 'border-[var(--color-panel-border)] bg-white text-slate-700'
+                        }`}
+                      >
+                        <span className="font-semibold">{contact.name}</span>
+                        <span className="mt-1 block text-sm text-slate-600">{contact.relationship}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <ToggleRow
+                    label="Also alert the care team if it feels urgent"
+                    description="CorVas can send a short urgent summary to your doctor or rehab nurse."
+                    checked={onboarding.autoAlertCareTeam}
+                    onChange={(value) => updateOnboarding({ autoAlertCareTeam: value })}
+                  />
+                  <ToggleRow
+                    label="Share my area in urgent alerts"
+                    description="This helps family or the care team know where you are."
+                    checked={onboarding.shareLocationForAlerts}
+                    onChange={(value) => updateOnboarding({ shareLocationForAlerts: value })}
+                  />
+                  <label className="block">
+                    <span className="mb-2 block text-base font-semibold text-slate-900">Area to share in urgent alerts</span>
+                    <input
+                      value={onboarding.locationLabel}
+                      onChange={(event) => updateOnboarding({ locationLabel: event.target.value })}
+                      className="h-14 w-full rounded-[20px] border border-[var(--color-panel-border)] px-4 text-lg text-slate-900 outline-none placeholder:text-slate-400 focus:border-[var(--color-teal-deep)]"
+                      placeholder="Neighborhood or area"
+                    />
+                  </label>
+                </>
               )}
 
               {step === 6 && (
@@ -279,4 +320,3 @@ export function OnboardingFlow() {
     </div>
   );
 }
-

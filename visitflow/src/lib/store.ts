@@ -72,6 +72,7 @@ interface AppState {
   notificationPermission: NotificationPermission;
   scheduledNotifications: ScheduledNotification[];
   suspiciousActivityScore: SuspiciousActivityScore | null;
+  lastUrgentEscalationKey?: string;
   setNotificationPermission: (permission: NotificationPermission) => void;
   updateSuspiciousActivityScore: (score: SuspiciousActivityScore) => void;
   updateDailyBriefRefreshTime: (timestamp: string) => void;
@@ -86,6 +87,12 @@ interface AppState {
   logRecoverySetback: (reason: RecoverySetback['reason'], note: string) => void;
   addSymptomCheckIn: (payload: Omit<SymptomCheckIn, 'id' | 'createdAt'>) => void;
   addSupportMessage: (body: string, contactId?: string, urgent?: boolean) => void;
+  sendEscalationOutreach: (params: {
+    contactId: string;
+    summary: string;
+    source: 'auto-caregiver' | 'auto-care-team' | 'manual-caregiver';
+  }) => void;
+  markUrgentEscalationHandled: (key?: string) => void;
   addChatMessage: (message: CorvasChatMessage) => void;
   addUploadedDocument: (title: string, rawText: string, plainSummary: string, followUpQuestions: string[]) => void;
   setActiveDocumentId: (documentId: string) => void;
@@ -141,6 +148,7 @@ export const useAppStore = create<AppState>()(
       notificationPermission: 'default' as NotificationPermission,
       scheduledNotifications: [],
       suspiciousActivityScore: null,
+      lastUrgentEscalationKey: undefined,
       lastDailyBriefRefresh: undefined,
 
       setHydrated: (value) => set({ hydrated: value }),
@@ -294,6 +302,51 @@ export const useAppStore = create<AppState>()(
           return {
             supportMessages: [...state.supportMessages, patientMessage, corvasReply],
           };
+        }),
+
+      sendEscalationOutreach: ({ contactId, summary, source }) =>
+        set((state) => {
+          const contact = state.contacts.find((item) => item.id === contactId);
+          if (!contact) return {};
+
+          const sentBody =
+            source === 'auto-caregiver'
+              ? `Urgent alert shared with ${contact.name}: ${summary}`
+              : source === 'auto-care-team'
+                ? `Urgent clinical update sent to ${contact.name}: ${summary}`
+                : `Urgent update sent to ${contact.name}: ${summary}`;
+
+          const replyBody =
+            contact.role === 'family'
+              ? `${contact.name} was notified and is checking in now.`
+              : `${contact.name} was notified with the urgent summary and can follow up.`;
+
+          return {
+            supportMessages: [
+              ...state.supportMessages,
+              {
+                id: makeId('support'),
+                sender: 'corvas',
+                contactId,
+                body: sentBody,
+                urgent: true,
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: makeId('support'),
+                sender: 'contact',
+                contactId,
+                body: replyBody,
+                urgent: true,
+                createdAt: new Date(Date.now() + 1000).toISOString(),
+              },
+            ],
+          };
+        }),
+
+      markUrgentEscalationHandled: (key) =>
+        set({
+          lastUrgentEscalationKey: key,
         }),
 
       addChatMessage: (message) =>
@@ -450,6 +503,7 @@ export const useAppStore = create<AppState>()(
         wearableSessions: state.wearableSessions,
         notificationPermission: state.notificationPermission,
         scheduledNotifications: state.scheduledNotifications,
+        lastUrgentEscalationKey: state.lastUrgentEscalationKey,
         lastDailyBriefRefresh: state.lastDailyBriefRefresh,
       }),
       onRehydrateStorage: () => (state) => {

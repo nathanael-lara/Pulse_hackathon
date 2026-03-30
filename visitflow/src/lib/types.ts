@@ -39,6 +39,10 @@ export interface OnboardingState {
   largeText: boolean;
   spokenReplies: boolean;
   caregiverUpdates: boolean;
+  autoAlertCareTeam: boolean;
+  shareLocationForAlerts: boolean;
+  emergencyContactId: string;
+  locationLabel: string;
 }
 
 // Anti-cheat verification system

@@ -13,10 +13,12 @@ import {
   ToggleRow,
 } from '@/components/app/ui';
 import {
+  buildUrgentEscalationSummary,
   formatLongDate,
   getCommunityMatches,
   getProviderRecommendations,
   getTransportRecommendations,
+  getTodaysCheckIn,
 } from '@/lib/corvas-logic';
 import { COMMUNITY_SUPPORT_MEMBERS, PROVIDER_MATCHES, TRANSPORT_OPTIONS } from '@/lib/mock-data';
 import { useAppStore } from '@/lib/store';
@@ -46,16 +48,23 @@ export function SupportScreen({
 }) {
   const {
     onboarding,
+    patient,
     contacts,
     supportMessages,
+    symptomCheckIns,
     escalations,
     updateOnboarding,
     addSupportMessage,
+    sendEscalationOutreach,
     reopenOnboarding,
     setActiveTab,
   } = useAppStore();
 
   const doctor = contacts.find((contact) => contact.name.includes('Dr.')) ?? contacts.find((contact) => contact.role === 'care-team');
+  const familyContacts = contacts.filter((contact) => contact.role === 'family');
+  const emergencyContact =
+    contacts.find((contact) => contact.id === onboarding.emergencyContactId)
+    ?? familyContacts[0];
   const [selectedContactId, setSelectedContactId] = useState(doctor?.id ?? contacts[0]?.id ?? '');
   const [message, setMessage] = useState('I need a little help understanding what to do next.');
   const [travelMiles, setTravelMiles] = useState(18);
@@ -79,6 +88,23 @@ export function SupportScreen({
   const transportOptions = useMemo(() => getTransportRecommendations(TRANSPORT_OPTIONS, travelMiles), [travelMiles]);
   const providerOptions = useMemo(() => getProviderRecommendations(PROVIDER_MATCHES, travelMiles), [travelMiles]);
   const communityMatches = useMemo(() => getCommunityMatches(COMMUNITY_SUPPORT_MEMBERS, travelMiles), [travelMiles]);
+
+  function notifyCaregiver() {
+    if (!topEscalation || topEscalation.tier !== 'urgent' || !emergencyContact) return;
+    const summary = buildUrgentEscalationSummary({
+      patientName: patient.preferredName,
+      event: topEscalation,
+      latestCheckIn: getTodaysCheckIn(symptomCheckIns) ?? symptomCheckIns[0],
+      locationLabel: onboarding.shareLocationForAlerts ? onboarding.locationLabel : undefined,
+    });
+    sendEscalationOutreach({
+      contactId: emergencyContact.id,
+      summary,
+      source: 'manual-caregiver',
+    });
+    setSupportPanel('thread');
+    setSupportNotice(`${emergencyContact.name} was notified right away.`);
+  }
 
   function startVoiceNote() {
     if (!canUseSpeechRecognition()) {
@@ -344,6 +370,11 @@ export function SupportScreen({
                         >
                           Ask CorVas what this means
                         </SecondaryButton>
+                        {event.tier === 'urgent' && emergencyContact ? (
+                          <SecondaryButton onClick={notifyCaregiver}>
+                            Notify {emergencyContact.relationship.toLowerCase()}
+                          </SecondaryButton>
+                        ) : null}
                         {event.tier === 'urgent' ? (
                           <a
                             href="tel:911"
@@ -520,10 +551,48 @@ export function SupportScreen({
                 />
                 <ToggleRow
                   label="Caregiver updates"
-                  description="Suggest family updates when recovery gets off track."
+                  description="Automatically alert your chosen caregiver if something urgent happens."
                   checked={onboarding.caregiverUpdates}
                   onChange={(value) => updateOnboarding({ caregiverUpdates: value })}
                 />
+                <ToggleRow
+                  label="Auto-alert care team"
+                  description="Send an urgent symptom summary to the care team when needed."
+                  checked={onboarding.autoAlertCareTeam}
+                  onChange={(value) => updateOnboarding({ autoAlertCareTeam: value })}
+                />
+                <ToggleRow
+                  label="Share my area in urgent alerts"
+                  description="Include your saved area when urgent alerts go out."
+                  checked={onboarding.shareLocationForAlerts}
+                  onChange={(value) => updateOnboarding({ shareLocationForAlerts: value })}
+                />
+                <div className="grid gap-3">
+                  {familyContacts.map((contact) => (
+                    <button
+                      key={contact.id}
+                      type="button"
+                      onClick={() => updateOnboarding({ emergencyContactId: contact.id })}
+                      className={`rounded-[20px] border px-4 py-4 text-left ${
+                        onboarding.emergencyContactId === contact.id
+                          ? 'border-[var(--color-teal-deep)] bg-[var(--color-panel-highlight)]'
+                          : 'border-[var(--color-panel-border)] bg-white'
+                      }`}
+                    >
+                      <p className="text-base font-semibold text-slate-900">{contact.name}</p>
+                      <p className="mt-1 text-sm text-slate-600">{contact.relationship}</p>
+                    </button>
+                  ))}
+                </div>
+                <label className="block">
+                  <span className="mb-2 block text-base font-semibold text-slate-900">Saved area for urgent alerts</span>
+                  <input
+                    value={onboarding.locationLabel}
+                    onChange={(event) => updateOnboarding({ locationLabel: event.target.value })}
+                    className="h-14 w-full rounded-[20px] border border-[var(--color-panel-border)] px-4 text-lg text-slate-900 outline-none placeholder:text-slate-400 focus:border-[var(--color-teal-deep)]"
+                    placeholder="Neighborhood or area"
+                  />
+                </label>
               </div>
             )}
           </SectionCard>

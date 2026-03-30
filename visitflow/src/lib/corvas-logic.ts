@@ -259,6 +259,27 @@ export function buildEscalations(params: {
   ];
 }
 
+export function buildUrgentEscalationSummary(params: {
+  patientName: string;
+  event: EscalationEvent;
+  latestCheckIn?: SymptomCheckIn;
+  locationLabel?: string;
+}) {
+  const details: string[] = [params.event.message];
+
+  if (params.latestCheckIn) {
+    details.push(
+      `Today's symptoms: breathlessness ${params.latestCheckIn.breathlessness}/4, dizziness ${params.latestCheckIn.dizziness}/4, chest discomfort ${params.latestCheckIn.chestDiscomfort}/4, worry ${params.latestCheckIn.worry}/4.`
+    );
+  }
+
+  if (params.locationLabel) {
+    details.push(`Location shared by the patient: ${params.locationLabel}.`);
+  }
+
+  return `${params.patientName} may need urgent help. ${details.join(' ')}`;
+}
+
 export function simplifyDocument(title: string, rawText: string) {
   const cleaned = rawText.replace(/\s+/g, ' ').trim();
   const snippet = cleaned.slice(0, 220);

@@ -11,6 +11,7 @@ import { RecoveryScreen } from '@/components/app/screens/RecoveryScreen';
 import { SupportScreen } from '@/components/app/screens/SupportScreen';
 import { TodayScreen } from '@/components/app/screens/TodayScreen';
 import { OnboardingFlow } from '@/components/app/OnboardingFlow';
+import { buildUrgentEscalationSummary, getTodaysCheckIn } from '@/lib/corvas-logic';
 import { useAppStore } from '@/lib/store';
 import type { AppTab } from '@/lib/types';
 
@@ -54,14 +55,19 @@ export function CorvasApp({ initialView }: { initialView?: string | null }) {
     onboarding,
     activeTab,
     patient,
+    contacts,
     recoveryWeeks,
     symptomCheckIns,
+    escalations,
     sodiumBudgetMg,
     mealLogs,
     medications,
     setHydrated,
     setActiveTab,
+    sendEscalationOutreach,
+    markUrgentEscalationHandled,
     updateOnboarding,
+    lastUrgentEscalationKey,
     lastDailyBriefRefresh,
     updateDailyBriefRefreshTime,
   } = useAppStore();
@@ -102,6 +108,69 @@ export function CorvasApp({ initialView }: { initialView?: string | null }) {
       // Quiet fallback. The app still works without service worker registration.
     });
   }, []);
+
+  useEffect(() => {
+    const topEscalation = escalations[0];
+    if (!topEscalation || topEscalation.tier !== 'urgent') {
+      return;
+    }
+
+    const escalationKey = `${topEscalation.tier}:${topEscalation.title}:${topEscalation.message}`;
+    if (lastUrgentEscalationKey === escalationKey) {
+      return;
+    }
+
+    const latestCheckIn = getTodaysCheckIn(symptomCheckIns) ?? symptomCheckIns[0];
+    const locationLabel = onboarding.shareLocationForAlerts ? onboarding.locationLabel : undefined;
+    const summary = buildUrgentEscalationSummary({
+      patientName: patient.preferredName,
+      event: topEscalation,
+      latestCheckIn: latestCheckIn ?? undefined,
+      locationLabel,
+    });
+
+    const caregiver =
+      contacts.find((contact) => contact.id === onboarding.emergencyContactId)
+      ?? contacts.find((contact) => contact.role === 'family');
+    const careTeam = contacts.find((contact) => contact.role === 'care-team');
+
+    let sentAny = false;
+
+    if (onboarding.caregiverUpdates && caregiver) {
+      sendEscalationOutreach({
+        contactId: caregiver.id,
+        summary,
+        source: 'auto-caregiver',
+      });
+      sentAny = true;
+    }
+
+    if (onboarding.autoAlertCareTeam && careTeam) {
+      sendEscalationOutreach({
+        contactId: careTeam.id,
+        summary,
+        source: 'auto-care-team',
+      });
+      sentAny = true;
+    }
+
+    if (sentAny) {
+      markUrgentEscalationHandled(escalationKey);
+    }
+  }, [
+    contacts,
+    escalations,
+    lastUrgentEscalationKey,
+    markUrgentEscalationHandled,
+    onboarding.autoAlertCareTeam,
+    onboarding.caregiverUpdates,
+    onboarding.emergencyContactId,
+    onboarding.locationLabel,
+    onboarding.shareLocationForAlerts,
+    patient.preferredName,
+    sendEscalationOutreach,
+    symptomCheckIns,
+  ]);
 
   // Refresh daily brief if last refresh was >6 hours ago
   useEffect(() => {

@@ -52,6 +52,10 @@ export const DEFAULT_ONBOARDING: OnboardingState = {
   largeText: true,
   spokenReplies: true,
   caregiverUpdates: true,
+  autoAlertCareTeam: true,
+  shareLocationForAlerts: true,
+  emergencyContactId: 'contact-ana',
+  locationLabel: 'Upper West Side, Manhattan',
 };
 
 export const CARE_CONTACTS: CareContact[] = [
