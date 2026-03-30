@@ -252,9 +252,9 @@ export function buildEscalations(params: {
       id: 'escalation-urgent',
       tier: 'urgent',
       createdAt: new Date().toISOString(),
-      title: 'Urgent support is recommended',
+      title: 'Emergency help may be needed',
       message: assessment.reasons.join(' '),
-      actionLabel: 'Call care team now',
+      actionLabel: 'Open urgent options',
     },
   ];
 }

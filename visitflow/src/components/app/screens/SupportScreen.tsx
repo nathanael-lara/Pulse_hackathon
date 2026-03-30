@@ -56,7 +56,6 @@ export function SupportScreen({
   } = useAppStore();
 
   const doctor = contacts.find((contact) => contact.name.includes('Dr.')) ?? contacts.find((contact) => contact.role === 'care-team');
-  const supportLine = contacts.find((contact) => contact.role === 'support');
   const [selectedContactId, setSelectedContactId] = useState(doctor?.id ?? contacts[0]?.id ?? '');
   const [message, setMessage] = useState('I need a little help understanding what to do next.');
   const [travelMiles, setTravelMiles] = useState(18);
@@ -345,12 +344,12 @@ export function SupportScreen({
                         >
                           Ask CorVas what this means
                         </SecondaryButton>
-                        {supportLine ? (
+                        {event.tier === 'urgent' ? (
                           <a
-                            href={`tel:${supportLine.phone.replace(/[^\d+]/g, '')}`}
+                            href="tel:911"
                             className="inline-flex min-h-12 items-center justify-center rounded-full border border-[var(--color-panel-border)] bg-white px-5 py-3 text-base font-semibold text-slate-900"
                           >
-                            Call 24-hour support
+                            Call 911 now
                           </a>
                         ) : null}
                       </div>

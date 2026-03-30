@@ -94,7 +94,6 @@ export function TodayScreen() {
   const todaysCheckIn = getTodaysCheckIn(symptomCheckIns);
   const topEscalation = escalations[0];
   const nextDose = medicationSummary.doses.find((dose) => dose.status !== 'taken');
-  const supportLine = contacts.find((contact) => contact.role === 'support');
   const [form, setForm] = useState({
     breathlessness: todaysCheckIn?.breathlessness ?? 1,
     dizziness: todaysCheckIn?.dizziness ?? 0,
@@ -505,12 +504,12 @@ export function TodayScreen() {
               <p className="mt-2 text-base leading-7 text-slate-700">{topEscalation.message}</p>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <PrimaryButton onClick={() => setActiveTab('support')}>{topEscalation.actionLabel}</PrimaryButton>
-                {supportLine ? (
+                {topEscalation.tier === 'urgent' ? (
                   <a
-                    href={`tel:${supportLine.phone.replace(/[^\d+]/g, '')}`}
+                    href="tel:911"
                     className="inline-flex min-h-12 items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-3 text-base font-semibold text-slate-900"
                   >
-                    Call support line
+                    Call 911 now
                   </a>
                 ) : null}
               </div>
