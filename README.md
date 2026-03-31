@@ -99,7 +99,7 @@ What it does not do:
 - Tailwind CSS
 - Framer Motion
 - Zustand
-- Netlify deployment
+- Vercel deployment
 
 ## Repository Structure
 
