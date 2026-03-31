@@ -4,7 +4,7 @@ CorVas is a senior-friendly cardiac recovery companion designed for people recov
 
 ## Live App
 
-- Live site: https://corvas.netlify.app
+- Live site: https://corvas-ai.vercel.app
 
 ## What CorVas Does
 
